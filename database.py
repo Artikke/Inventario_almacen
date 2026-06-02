@@ -548,6 +548,21 @@ def entregar_pedido(pedido_id):
     conn.close()
 
 
+def borrar_pedido(pedido_id):
+    """Elimina un pedido y su detalle."""
+    conn = get_conn()
+    pedido = conn.execute(
+        "SELECT p.*, a.nombre as area FROM pedidos p JOIN areas a ON p.area_id=a.id WHERE p.id=?",
+        (pedido_id,)
+    ).fetchone()
+    if pedido:
+        conn.execute("DELETE FROM detalle_pedido WHERE pedido_id=?", (pedido_id,))
+        conn.execute("DELETE FROM pedidos WHERE id=?", (pedido_id,))
+        log_actividad(conn, "Admin", pedido["area"], "Pedido eliminado", f"#{pedido_id}")
+    conn.commit()
+    conn.close()
+
+
 # --- Inventario por área ---
 
 def get_inventario_area(area_id):

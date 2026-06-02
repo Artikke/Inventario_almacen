@@ -7,7 +7,7 @@ from database import (
     actualizar_producto, actualizar_stock, agregar_productos_masivo,
     get_ciclo_activo, get_ciclos, crear_ciclo, cerrar_ciclo,
     crear_pedido, get_pedidos_area, get_detalle_pedido, get_todos_pedidos,
-    actualizar_estado_pedido, entregar_pedido, contar_pedidos_pendientes,
+    actualizar_estado_pedido, entregar_pedido, borrar_pedido, contar_pedidos_pendientes,
     get_inventario_area, get_resumen_por_area, get_productos_mas_pedidos,
     get_stock_bajo, get_consumo_por_area_periodo,
     actualizar_lider, get_log_actividad, log_actividad,
@@ -412,7 +412,6 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
         st.progress(progreso)
-        st.markdown(f'<p class="sidebar-ciclo-days">{dias} dias restantes</p>', unsafe_allow_html=True)
 
     if pendientes and is_admin:
         st.divider()
@@ -463,6 +462,10 @@ if not is_admin:
             if not productos:
                 render_empty_state("", "El catalogo esta vacio. Espera a que el administrador cargue los productos.")
             else:
+                # Mensaje de confirmacion
+                if st.session_state.pop("pedido_enviado", None):
+                    st.success("Gracias, tu pedido ha sido enviado. El equipo de almacen lo revisara pronto.")
+
                 # Search + priority row
                 col_search, col_prio = st.columns([4, 1])
                 with col_search:
@@ -533,7 +536,14 @@ if not is_admin:
                             prio = "urgente" if prioridad == "Urgente" else "normal"
                             pedido_id = crear_pedido(area_id, ciclo["id"], items_pedido, notas, prio)
                             st.balloons()
-                            st.success(f"Pedido #{pedido_id} enviado correctamente")
+                            st.session_state["pedido_enviado"] = pedido_id
+                            # Limpiar cantidades
+                            for p in productos:
+                                key = f"prod_{p['id']}"
+                                if key in st.session_state:
+                                    st.session_state[key] = 0
+                            if "notas_pedido" in st.session_state:
+                                st.session_state["notas_pedido"] = ""
                             st.rerun()
                     else:
                         st.caption("Selecciona productos del catalogo para armar tu pedido.")
@@ -736,7 +746,7 @@ else:
                     st.dataframe(df_d, use_container_width=True, hide_index=True)
 
                     if estado == "pendiente":
-                        c1, c2, c3 = st.columns(3)
+                        c1, c2, c3, c4 = st.columns(4)
                         with c1:
                             if st.button("Aprobar", key=f"apr_{ped['id']}", use_container_width=True):
                                 actualizar_estado_pedido(ped["id"], "aprobado")
@@ -749,9 +759,23 @@ else:
                             if st.button("Rechazar", key=f"rej_{ped['id']}", use_container_width=True):
                                 actualizar_estado_pedido(ped["id"], "rechazado")
                                 st.rerun()
+                        with c4:
+                            if st.button("Eliminar", key=f"del_{ped['id']}", use_container_width=True):
+                                borrar_pedido(ped["id"])
+                                st.rerun()
                     elif estado == "aprobado":
-                        if st.button("Marcar Entregado", key=f"entd_{ped['id']}", use_container_width=True, type="primary"):
-                            entregar_pedido(ped["id"])
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            if st.button("Marcar Entregado", key=f"entd_{ped['id']}", use_container_width=True, type="primary"):
+                                entregar_pedido(ped["id"])
+                                st.rerun()
+                        with c2:
+                            if st.button("Eliminar", key=f"dela_{ped['id']}", use_container_width=True):
+                                borrar_pedido(ped["id"])
+                                st.rerun()
+                    else:
+                        if st.button("Eliminar", key=f"dele_{ped['id']}"):
+                            borrar_pedido(ped["id"])
                             st.rerun()
 
     # ── CATALOGO ──
@@ -834,7 +858,7 @@ else:
             total_dias = max(1, (f_fin - f_ini).days)
             progreso = max(0, min(1.0, 1 - (dias / total_dias)))
             st.success(f"**Ciclo activo:** {ciclo_activo['nombre']}")
-            st.progress(progreso, text=f"{dias} dias restantes")
+            st.progress(progreso)
             if st.button("Cerrar ciclo actual"):
                 cerrar_ciclo(ciclo_activo["id"])
                 asegurar_ciclo_activo()
