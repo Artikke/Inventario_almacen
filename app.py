@@ -14,6 +14,9 @@ from database import (
     CICLO_DIAS,
 )
 
+# ==============================================================
+# CONFIG
+# ==============================================================
 st.set_page_config(
     page_title="PROESA - Inventario",
     page_icon="📦",
@@ -21,129 +24,367 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- Init ---
 init_db()
 cargar_catalogo_ejemplo()
 asegurar_ciclo_activo()
 
-# --- CSS PROESA ---
-st.markdown("""
+# ==============================================================
+# CSS — Design system corporativo PROESA
+# ==============================================================
+PROESA_CSS = """
 <style>
-    /* General */
-    .block-container { padding: 1rem 2rem; max-width: 100%; }
-    header[data-testid="stHeader"] { background: #1a5276; }
+:root {
+    --proesa-blue: #1a5276;
+    --proesa-dark-blue: #0e3650;
+    --proesa-mid-blue: #2471a3;
+    --proesa-light-blue: #d6eaf8;
+    --proesa-ice: #eaf2f8;
+    --proesa-green: #1abc9c;
+    --proesa-green-bg: #e8f8f5;
+    --proesa-yellow: #f39c12;
+    --proesa-yellow-bg: #fef9e7;
+    --proesa-red: #e74c3c;
+    --proesa-red-bg: #fdedec;
+    --proesa-bg: #f4f7fa;
+    --proesa-white: #ffffff;
+    --proesa-border: #d4e6f1;
+    --proesa-text: #1a1a2e;
+    --proesa-muted: #7f8c8d;
+    --radius: 14px;
+    --shadow-sm: 0 1px 3px rgba(26,82,118,0.06);
+    --shadow-md: 0 4px 12px rgba(26,82,118,0.08);
+    --shadow-lg: 0 8px 24px rgba(26,82,118,0.10);
+}
 
-    /* Sidebar */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a5276 0%, #154360 100%);
-    }
-    section[data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    section[data-testid="stSidebar"] .stRadio label {
-        background: rgba(255,255,255,0.1);
-        border-radius: 8px;
-        padding: 8px 12px;
-        margin: 2px 0;
-        transition: background 0.2s;
-    }
-    section[data-testid="stSidebar"] .stRadio label:hover {
-        background: rgba(255,255,255,0.2);
-    }
-    section[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.2); }
+/* ── Layout ── */
+.block-container { padding: 1.2rem 2.5rem 2rem; max-width: 100%; }
+header[data-testid="stHeader"] { background: var(--proesa-blue); }
+[data-testid="stAppViewBlockContainer"] { background: var(--proesa-bg); }
 
-    /* KPI cards */
-    div[data-testid="stMetric"] {
-        background: white;
-        border: 1px solid #d4e6f1;
-        border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 2px 8px rgba(26,82,118,0.08);
-    }
-    div[data-testid="stMetricValue"] {
-        font-size: 2rem; font-weight: 700; color: #1a5276;
-    }
-    div[data-testid="stMetricLabel"] {
-        font-size: 0.85rem; color: #5d6d7e;
-    }
+/* ── Sidebar ── */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, var(--proesa-blue) 0%, var(--proesa-dark-blue) 100%);
+    border-right: none;
+}
+section[data-testid="stSidebar"] * { color: #ffffff !important; }
+section[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.12); margin: 12px 0; }
+section[data-testid="stSidebar"] .stSelectbox > div > div {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 10px;
+}
+section[data-testid="stSidebar"] .stRadio label {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 10px; padding: 10px 14px; margin: 3px 0;
+    font-weight: 500; transition: all 0.2s ease;
+}
+section[data-testid="stSidebar"] .stRadio label:hover {
+    background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.25);
+}
+section[data-testid="stSidebar"] .stRadio label[data-checked="true"],
+section[data-testid="stSidebar"] .stRadio div[role="radiogroup"] label[aria-checked="true"] {
+    background: rgba(255,255,255,0.22) !important;
+    border-color: var(--proesa-green) !important;
+}
+section[data-testid="stSidebar"] .stProgress > div > div {
+    background: rgba(255,255,255,0.15); border-radius: 8px;
+}
+section[data-testid="stSidebar"] .stProgress > div > div > div {
+    background: var(--proesa-green); border-radius: 8px;
+}
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        background: #eaf2f8; border-radius: 10px; padding: 4px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px; font-weight: 500;
-    }
-    .stTabs [aria-selected="true"] {
-        background: #1a5276 !important; color: white !important;
-    }
+/* ── Sidebar logo ── */
+.sidebar-logo {
+    text-align: center; padding: 20px 0 8px;
+}
+.sidebar-logo-mark {
+    font-size: 2rem; font-weight: 800; letter-spacing: 4px;
+    color: #ffffff; margin: 0; line-height: 1.1;
+}
+.sidebar-logo-sub {
+    font-size: 0.6rem; letter-spacing: 4px; text-transform: uppercase;
+    color: rgba(255,255,255,0.55); margin: 2px 0 0;
+}
+.sidebar-section-label {
+    font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase;
+    color: rgba(255,255,255,0.45); margin: 0 0 6px; font-weight: 600;
+}
+.sidebar-ciclo {
+    background: rgba(255,255,255,0.08); border-radius: 12px;
+    padding: 14px; margin-top: 4px;
+}
+.sidebar-ciclo-title { font-size: 0.75rem; color: rgba(255,255,255,0.6); margin: 0; }
+.sidebar-ciclo-name { font-size: 0.9rem; font-weight: 600; color: #fff; margin: 2px 0 8px; }
+.sidebar-ciclo-days {
+    font-size: 0.7rem; color: rgba(255,255,255,0.5); margin: 4px 0 0; text-align: right;
+}
+.sidebar-badge {
+    background: var(--proesa-red); color: white; font-size: 0.72rem; font-weight: 700;
+    padding: 6px 12px; border-radius: 10px; text-align: center; margin-top: 4px;
+}
 
-    /* Buttons */
-    .stButton > button[kind="primary"] {
-        background: #1a5276; border: none; font-weight: 600;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background: #154360;
-    }
+/* ── Page header ── */
+.page-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 2px solid var(--proesa-border);
+}
+.page-header-icon { font-size: 1.8rem; }
+.page-header-text h2 {
+    margin: 0; font-size: 1.5rem; font-weight: 700;
+    color: var(--proesa-blue); line-height: 1.2;
+}
+.page-header-text p {
+    margin: 2px 0 0; font-size: 0.82rem; color: var(--proesa-muted);
+}
 
-    /* Expanders */
-    .streamlit-expanderHeader {
-        background: #f8fbfd; border-radius: 8px; font-weight: 500;
-    }
+/* ── KPI Cards ── */
+div[data-testid="stMetric"] {
+    background: var(--proesa-white);
+    border: 1px solid var(--proesa-border);
+    border-radius: var(--radius); padding: 18px 16px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+div[data-testid="stMetric"]:hover {
+    box-shadow: var(--shadow-md); transform: translateY(-1px);
+}
+div[data-testid="stMetricValue"] {
+    font-size: 2rem; font-weight: 800; color: var(--proesa-blue);
+}
+div[data-testid="stMetricLabel"] {
+    font-size: 0.78rem; color: var(--proesa-muted);
+    text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;
+}
 
-    /* Tables */
-    .stDataFrame { border-radius: 10px; overflow: hidden; }
+/* ── Tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+    background: var(--proesa-white); border-radius: 12px;
+    padding: 4px; border: 1px solid var(--proesa-border);
+    box-shadow: var(--shadow-sm); gap: 2px;
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 10px; font-weight: 500; font-size: 0.88rem;
+    padding: 8px 18px; color: var(--proesa-muted);
+}
+.stTabs [aria-selected="true"] {
+    background: var(--proesa-blue) !important; color: #ffffff !important;
+    font-weight: 600; box-shadow: var(--shadow-sm);
+}
 
-    /* Logo header */
-    .proesa-header {
-        text-align: center; padding: 10px 0 5px 0;
-    }
-    .proesa-header img { width: 60px; margin-bottom: 4px; }
-    .proesa-title {
-        font-size: 1.1rem; font-weight: 700; color: white;
-        letter-spacing: 2px; margin: 0;
-    }
-    .proesa-sub {
-        font-size: 0.65rem; color: rgba(255,255,255,0.7);
-        letter-spacing: 3px; margin: 0;
-    }
+/* ── Buttons ── */
+.stButton > button {
+    border-radius: 10px; font-weight: 600; font-size: 0.85rem;
+    padding: 8px 20px; transition: all 0.2s;
+}
+.stButton > button[kind="primary"] {
+    background: var(--proesa-blue); border: none; color: white;
+}
+.stButton > button[kind="primary"]:hover {
+    background: var(--proesa-dark-blue); box-shadow: var(--shadow-md);
+}
+.stButton > button[kind="secondary"] {
+    border: 1px solid var(--proesa-border); color: var(--proesa-blue);
+}
 
-    /* Page title */
-    .page-title {
-        color: #1a5276; font-size: 1.6rem; font-weight: 700;
-        border-bottom: 3px solid #2e86c1; padding-bottom: 8px;
-        margin-bottom: 20px;
-    }
+/* ── Expanders / Cards ── */
+.streamlit-expanderHeader {
+    background: var(--proesa-white); border-radius: var(--radius) !important;
+    font-weight: 500; font-size: 0.9rem;
+    border: 1px solid var(--proesa-border);
+}
+details[open] .streamlit-expanderHeader {
+    border-bottom: 1px solid var(--proesa-border);
+    border-radius: var(--radius) var(--radius) 0 0 !important;
+}
+.streamlit-expanderContent {
+    border: 1px solid var(--proesa-border); border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    background: var(--proesa-white);
+}
+
+/* ── Inputs ── */
+.stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div {
+    border-radius: 10px; border: 1px solid var(--proesa-border);
+}
+.stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within {
+    border-color: var(--proesa-mid-blue);
+    box-shadow: 0 0 0 2px rgba(36,113,163,0.15);
+}
+
+/* ── DataFrames ── */
+.stDataFrame { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+
+/* ── Custom badges ── */
+.badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px;
+}
+.badge-green { background: var(--proesa-green-bg); color: #148f77; }
+.badge-yellow { background: var(--proesa-yellow-bg); color: #b7950b; }
+.badge-red { background: var(--proesa-red-bg); color: #c0392b; }
+.badge-blue { background: var(--proesa-light-blue); color: var(--proesa-blue); }
+
+/* ── Product row ── */
+.prod-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; margin: 2px 0;
+    border-bottom: 1px solid #f0f3f5;
+    transition: background 0.15s;
+}
+.prod-row:hover { background: var(--proesa-ice); }
+.prod-row:last-child { border-bottom: none; }
+.prod-name { flex: 3; font-weight: 500; font-size: 0.9rem; color: var(--proesa-text); }
+.prod-unit { flex: 1; font-size: 0.8rem; color: var(--proesa-muted); text-align: center; }
+.prod-stock { flex: 1; text-align: center; }
+
+/* ── Order card ── */
+.order-card {
+    background: var(--proesa-white); border: 1px solid var(--proesa-border);
+    border-radius: var(--radius); padding: 16px 20px; margin: 8px 0;
+    box-shadow: var(--shadow-sm); transition: box-shadow 0.2s;
+}
+.order-card:hover { box-shadow: var(--shadow-md); }
+.order-card-urgent { border-left: 4px solid var(--proesa-red); }
+.order-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+}
+.order-folio { font-weight: 700; color: var(--proesa-blue); font-size: 0.95rem; }
+.order-date { font-size: 0.78rem; color: var(--proesa-muted); }
+.order-area { font-size: 0.85rem; color: var(--proesa-text); font-weight: 500; }
+
+/* ── Summary panel ── */
+.summary-panel {
+    background: var(--proesa-white); border: 2px solid var(--proesa-blue);
+    border-radius: var(--radius); padding: 18px 20px;
+    box-shadow: var(--shadow-md); position: sticky; top: 20px;
+}
+.summary-title {
+    font-size: 0.95rem; font-weight: 700; color: var(--proesa-blue);
+    margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--proesa-border);
+}
+.summary-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 0; font-size: 0.85rem;
+}
+.summary-item-name { color: var(--proesa-text); }
+.summary-item-qty { font-weight: 700; color: var(--proesa-blue); }
+.summary-total {
+    display: flex; justify-content: space-between; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid var(--proesa-border);
+    font-weight: 700; font-size: 0.95rem; color: var(--proesa-blue);
+}
+
+/* ── Section heading ── */
+.section-heading {
+    font-size: 1.05rem; font-weight: 700; color: var(--proesa-blue);
+    margin: 24px 0 12px; padding-bottom: 6px;
+    border-bottom: 2px solid var(--proesa-light-blue);
+}
+
+/* ── Alert bar ── */
+.alert-bar {
+    display: flex; gap: 12px; margin-bottom: 20px;
+}
+.alert-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 10px; font-size: 0.82rem; font-weight: 600;
+}
+.alert-chip-red { background: var(--proesa-red-bg); color: var(--proesa-red); }
+.alert-chip-yellow { background: var(--proesa-yellow-bg); color: #b7950b; }
+
+/* ── Empty state ── */
+.empty-state {
+    text-align: center; padding: 40px 20px; color: var(--proesa-muted);
+}
+.empty-state-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.empty-state-text { font-size: 0.95rem; }
+
+/* ── Footer ── */
+.app-footer {
+    text-align: center; padding: 20px 0 8px;
+    font-size: 0.72rem; color: var(--proesa-muted);
+    border-top: 1px solid var(--proesa-border); margin-top: 40px;
+}
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(PROESA_CSS, unsafe_allow_html=True)
 
-# --- Sidebar ---
+
+# ==============================================================
+# HELPER COMPONENTS
+# ==============================================================
+
+def render_page_header(icon, title, subtitle=""):
+    sub_html = f"<p>{subtitle}</p>" if subtitle else ""
+    st.markdown(f"""
+    <div class="page-header">
+        <div class="page-header-icon">{icon}</div>
+        <div class="page-header-text">
+            <h2>{title}</h2>
+            {sub_html}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_stock_badge(stock):
+    if stock == 0:
+        return '<span class="badge badge-red">Sin stock</span>'
+    elif stock <= 5:
+        return f'<span class="badge badge-yellow">Stock: {stock}</span>'
+    else:
+        return f'<span class="badge badge-green">Stock: {stock}</span>'
+
+
+def render_status_badge(estado):
+    m = {
+        "pendiente": ("Pendiente", "badge-yellow"),
+        "aprobado": ("Aprobado", "badge-blue"),
+        "entregado": ("Entregado", "badge-green"),
+        "rechazado": ("Rechazado", "badge-red"),
+    }
+    text, cls = m.get(estado, (estado, "badge-blue"))
+    return f'<span class="badge {cls}">{text}</span>'
+
+
+def render_empty_state(icon, text):
+    st.markdown(f"""
+    <div class="empty-state">
+        <div class="empty-state-icon">{icon}</div>
+        <div class="empty-state-text">{text}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def render_section_heading(text):
+    st.markdown(f'<div class="section-heading">{text}</div>', unsafe_allow_html=True)
+
+
+# ==============================================================
+# SIDEBAR
+# ==============================================================
 areas = get_areas()
 area_nombres = [a["nombre"] for a in areas]
 pendientes = contar_pedidos_pendientes()
 
 with st.sidebar:
-    # Logo
     st.markdown("""
-    <div class="proesa-header">
-        <p class="proesa-title">PROESA</p>
-        <p class="proesa-sub">SOLUCIONES EN SALUD</p>
+    <div class="sidebar-logo">
+        <p class="sidebar-logo-mark">PROESA</p>
+        <p class="sidebar-logo-sub">Soluciones en Salud</p>
     </div>
     """, unsafe_allow_html=True)
     st.divider()
 
-    st.markdown("##### Acceso")
-    rol = st.radio(
-        "Rol",
-        ["Líder de Área", "Almacén (Admin)"],
-        label_visibility="collapsed",
-    )
+    st.markdown('<p class="sidebar-section-label">Acceso</p>', unsafe_allow_html=True)
+    rol = st.radio("Rol", ["Lider de Area", "Almacen (Admin)"], label_visibility="collapsed")
     is_admin = "Admin" in rol
 
     if not is_admin:
         st.divider()
-        st.markdown("##### Tu Área")
-        area_sel = st.selectbox("Área", area_nombres, label_visibility="collapsed")
+        st.markdown('<p class="sidebar-section-label">Selecciona tu area</p>', unsafe_allow_html=True)
+        area_sel = st.selectbox("Area", area_nombres, label_visibility="collapsed")
         area = next(a for a in areas if a["nombre"] == area_sel)
         area_id = area["id"]
 
@@ -151,156 +392,249 @@ with st.sidebar:
     ciclo = get_ciclo_activo()
     if ciclo:
         dias = (datetime.strptime(ciclo["fecha_cierre"], "%Y-%m-%d") - datetime.now()).days
-        st.markdown(f"**Ciclo activo**")
-        st.caption(f"{ciclo['nombre']}")
-        st.progress(max(0, min(1.0, 1 - (dias / CICLO_DIAS))))
-        st.caption(f"{max(0, dias)} días restantes")
+        dias = max(0, dias)
+        progreso = max(0, min(1.0, 1 - (dias / CICLO_DIAS)))
+        st.markdown(f"""
+        <div class="sidebar-ciclo">
+            <p class="sidebar-ciclo-title">CICLO ACTIVO</p>
+            <p class="sidebar-ciclo-name">{ciclo['nombre']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.progress(progreso)
+        st.markdown(f'<p class="sidebar-ciclo-days">{dias} dias restantes</p>', unsafe_allow_html=True)
 
     if pendientes and is_admin:
         st.divider()
-        st.error(f"📬 {pendientes} pedido(s) pendiente(s)")
+        st.markdown(f'<div class="sidebar-badge">{pendientes} pedido(s) pendiente(s)</div>',
+                    unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="app-footer">
+        PROESA Soluciones en Salud<br>
+        Sistema de Inventario v3.0
+    </div>
+    """, unsafe_allow_html=True)
 
 
-# =====================================================
-# VISTA LÍDER DE ÁREA
-# =====================================================
+# ==============================================================
+# VISTA LIDER DE AREA
+# ==============================================================
 if not is_admin:
-    emoji = area.get("emoji", "🏢")
-    st.markdown(f'<div class="page-title">{emoji} {area_sel}</div>', unsafe_allow_html=True)
+    emoji_area = area.get("emoji", "")
+    lider_nombre = area.get("lider", "") or "Sin asignar"
+    render_page_header(emoji_area, area_sel, f"Lider: {lider_nombre}")
 
-    # KPIs
+    # ── KPIs ──
     pedidos_area = get_pedidos_area(area_id)
     inv = get_inventario_area(area_id)
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
+    n_pend = len([p for p in pedidos_area if p["estado"] == "pendiente"])
+    n_ent = len([p for p in pedidos_area if p["estado"] == "entregado"])
+    n_items = sum(i["cantidad"] for i in inv) if inv else 0
+
+    k1, k2, k3, k4 = st.columns(4)
+    with k1:
         st.metric("Total Pedidos", len(pedidos_area))
-    with c2:
-        st.metric("Pendientes", len([p for p in pedidos_area if p["estado"] == "pendiente"]))
-    with c3:
-        st.metric("Entregados", len([p for p in pedidos_area if p["estado"] == "entregado"]))
-    with c4:
-        st.metric("Items en Área", sum(i["cantidad"] for i in inv) if inv else 0)
+    with k2:
+        st.metric("Pendientes", n_pend)
+    with k3:
+        st.metric("Entregados", n_ent)
+    with k4:
+        st.metric("Items en Area", n_items)
 
-    tab1, tab2, tab3 = st.tabs(["Nuevo Pedido", "Mis Pedidos", "Mi Inventario"])
+    tab_pedido, tab_mis, tab_inv = st.tabs(["Nuevo Pedido", "Mis Pedidos", "Mi Inventario"])
 
-    # --- NUEVO PEDIDO ---
-    with tab1:
+    # ── NUEVO PEDIDO ──
+    with tab_pedido:
         if not ciclo:
-            st.warning("No hay un ciclo de pedidos abierto.")
+            render_empty_state("", "No hay un ciclo de pedidos abierto. Contacta al administrador.")
         else:
             productos = get_productos()
             if not productos:
-                st.warning("El catálogo está vacío. Espera a que el administrador cargue los productos.")
+                render_empty_state("", "El catalogo esta vacio. Espera a que el administrador cargue los productos.")
             else:
-                col_buscar, col_prio = st.columns([3, 1])
-                with col_buscar:
-                    buscar = st.text_input("Buscar producto", placeholder="Ej: pluma, tóner, café...")
+                # Search + priority row
+                col_search, col_prio = st.columns([4, 1])
+                with col_search:
+                    buscar = st.text_input(
+                        "Buscar producto",
+                        placeholder="Escribe para filtrar: boligrafo, folder, pilas...",
+                        label_visibility="collapsed",
+                    )
                 with col_prio:
-                    prioridad = st.selectbox("Prioridad", ["Normal", "Urgente"])
+                    prioridad = st.selectbox("Prioridad", ["Normal", "Urgente"], label_visibility="collapsed")
 
-                categorias = sorted(set(p["categoria"] for p in productos))
+                # Two-column layout: products left, summary right
+                col_productos, col_resumen = st.columns([3, 1])
+
                 items_pedido = []
+                productos_sel_info = []
 
-                for cat in categorias:
-                    prods_cat = [p for p in productos if p["categoria"] == cat]
-                    if buscar:
-                        prods_cat = [p for p in prods_cat if buscar.lower() in p["nombre"].lower()]
-                    if not prods_cat:
-                        continue
+                with col_productos:
+                    categorias = sorted(set(p["categoria"] for p in productos))
+                    for cat in categorias:
+                        prods_cat = [p for p in productos if p["categoria"] == cat]
+                        if buscar:
+                            prods_cat = [p for p in prods_cat if buscar.lower() in p["nombre"].lower()]
+                        if not prods_cat:
+                            continue
 
-                    with st.expander(f"{cat} ({len(prods_cat)} productos)", expanded=bool(buscar)):
-                        for p in prods_cat:
-                            col1, col2, col3 = st.columns([4, 2, 1])
-                            with col1:
-                                st.markdown(f"**{p['nombre']}**")
-                            with col2:
-                                st.caption(f"{p['unidad']} | Stock: {p['stock_almacen']}")
-                            with col3:
-                                cant = st.number_input(
-                                    "Cant", min_value=0, max_value=999, value=0,
-                                    key=f"prod_{p['id']}", label_visibility="collapsed",
-                                )
-                                if cant > 0:
-                                    items_pedido.append((p["id"], cant))
+                        with st.expander(f"{cat}  ({len(prods_cat)})", expanded=bool(buscar)):
+                            # Table header
+                            hdr1, hdr2, hdr3, hdr4 = st.columns([4, 1.5, 1.5, 1])
+                            with hdr1:
+                                st.caption("**PRODUCTO**")
+                            with hdr2:
+                                st.caption("**UNIDAD**")
+                            with hdr3:
+                                st.caption("**STOCK**")
+                            with hdr4:
+                                st.caption("**CANT.**")
 
-                notas = st.text_area("Notas (opcional)", placeholder="Ej: Necesario para evento del viernes")
+                            for p in prods_cat:
+                                r1, r2, r3, r4 = st.columns([4, 1.5, 1.5, 1])
+                                with r1:
+                                    st.markdown(f"**{p['nombre']}**")
+                                with r2:
+                                    st.caption(p["unidad"])
+                                with r3:
+                                    stock = p["stock_almacen"]
+                                    st.markdown(render_stock_badge(stock), unsafe_allow_html=True)
+                                with r4:
+                                    cant = st.number_input(
+                                        "c", min_value=0, max_value=999, value=0,
+                                        key=f"prod_{p['id']}", label_visibility="collapsed",
+                                    )
+                                    if cant > 0:
+                                        items_pedido.append((p["id"], cant))
+                                        productos_sel_info.append((p["nombre"], cant, p["unidad"]))
 
-                col_info, col_btn = st.columns([2, 1])
-                with col_info:
-                    if items_pedido:
-                        st.success(f"**{len(items_pedido)} producto(s)** seleccionados")
-                with col_btn:
-                    if items_pedido:
+                # ── Summary panel ──
+                with col_resumen:
+                    if productos_sel_info:
+                        items_html = ""
+                        for nombre, cant, unidad in productos_sel_info:
+                            items_html += f"""
+                            <div class="summary-item">
+                                <span class="summary-item-name">{nombre}</span>
+                                <span class="summary-item-qty">{cant} {unidad}</span>
+                            </div>"""
+                        prio_badge = '<span class="badge badge-red">Urgente</span>' if prioridad == "Urgente" else '<span class="badge badge-blue">Normal</span>'
+                        st.markdown(f"""
+                        <div class="summary-panel">
+                            <div class="summary-title">Resumen del Pedido {prio_badge}</div>
+                            {items_html}
+                            <div class="summary-total">
+                                <span>Total productos</span>
+                                <span>{len(productos_sel_info)}</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        notas = st.text_area("Notas (opcional)", placeholder="Ej: Necesario para evento del viernes",
+                                             key="notas_pedido")
+
                         if st.button("Enviar Pedido", type="primary", use_container_width=True):
                             prio = "urgente" if prioridad == "Urgente" else "normal"
                             pedido_id = crear_pedido(area_id, ciclo["id"], items_pedido, notas, prio)
                             st.balloons()
-                            st.success(f"Pedido #{pedido_id} enviado")
+                            st.success(f"Pedido #{pedido_id} enviado correctamente")
                             st.rerun()
+                    else:
+                        st.markdown("""
+                        <div class="summary-panel" style="text-align:center; color: var(--proesa-muted);">
+                            <div class="summary-title">Resumen del Pedido</div>
+                            <p style="font-size:0.85rem; padding: 20px 0;">
+                                Selecciona productos del catalogo para armar tu pedido.
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-    # --- MIS PEDIDOS ---
-    with tab2:
+    # ── MIS PEDIDOS ──
+    with tab_mis:
         if not pedidos_area:
-            st.info("No tienes pedidos registrados aún.")
+            render_empty_state("", "No tienes pedidos registrados aun.")
         else:
-            filtro_estado = st.selectbox(
-                "Filtrar", ["Todos", "Pendientes", "Aprobados", "Entregados", "Rechazados"],
-                key="filtro_mis",
-            )
+            # Filters
+            fc1, fc2 = st.columns([1, 3])
+            with fc1:
+                filtro_estado = st.selectbox(
+                    "Estado", ["Todos", "Pendientes", "Aprobados", "Entregados", "Rechazados"],
+                    key="filtro_mis",
+                )
+
+            mapa = {"Pendientes": "pendiente", "Aprobados": "aprobado",
+                    "Entregados": "entregado", "Rechazados": "rechazado"}
             pedidos_f = pedidos_area
             if filtro_estado != "Todos":
-                mapa = {"Pendientes": "pendiente", "Aprobados": "aprobado",
-                        "Entregados": "entregado", "Rechazados": "rechazado"}
                 pedidos_f = [p for p in pedidos_area if p["estado"] == mapa[filtro_estado]]
+
+            st.caption(f"{len(pedidos_f)} pedido(s)")
 
             for ped in pedidos_f:
                 estado = ped["estado"]
-                emoji_st = {"pendiente": "🟡", "aprobado": "🔵", "entregado": "🟢", "rechazado": "🔴"}.get(estado, "⚪")
-                urg = " | URGENTE" if ped.get("prioridad") == "urgente" else ""
+                urg_class = " order-card-urgent" if ped.get("prioridad") == "urgente" else ""
+                urg_badge = ' <span class="badge badge-red">Urgente</span>' if ped.get("prioridad") == "urgente" else ""
 
-                with st.expander(f"{emoji_st} Pedido #{ped['id']} — {estado.upper()}{urg} | {ped['fecha_pedido'][:10]}"):
+                st.markdown(f"""
+                <div class="order-card{urg_class}">
+                    <div class="order-header">
+                        <span class="order-folio">Pedido #{ped['id']}{urg_badge}</span>
+                        <span class="order-date">{ped['fecha_pedido'][:10]}</span>
+                    </div>
+                    <div style="margin-bottom:4px;">{render_status_badge(estado)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                with st.expander(f"Ver detalle #{ped['id']}"):
                     if ped["notas"]:
-                        st.info(f"{ped['notas']}")
+                        st.info(ped["notas"])
                     detalles = get_detalle_pedido(ped["id"])
                     df_det = pd.DataFrame(detalles)[["producto_nombre", "cantidad", "unidad", "cantidad_entregada"]]
-                    df_det.columns = ["Producto", "Pedido", "Unidad", "Entregado"]
+                    df_det.columns = ["Producto", "Solicitado", "Unidad", "Entregado"]
                     st.dataframe(df_det, use_container_width=True, hide_index=True)
 
-    # --- MI INVENTARIO ---
-    with tab3:
+    # ── MI INVENTARIO ──
+    with tab_inv:
         if not inv:
-            st.info("Tu área no tiene inventario registrado. Aparecerá cuando te entreguen pedidos.")
+            render_empty_state("", "Tu area no tiene inventario registrado. Aparecera cuando te entreguen pedidos.")
         else:
-            df = pd.DataFrame(inv)[["producto_nombre", "cantidad", "unidad", "categoria", "ultima_actualizacion"]]
-            df.columns = ["Producto", "Cantidad", "Unidad", "Categoría", "Última Entrega"]
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            buscar_inv = st.text_input("Buscar en inventario", placeholder="Filtrar productos...",
+                                        key="buscar_inv", label_visibility="collapsed")
+            df_inv = pd.DataFrame(inv)[["producto_nombre", "cantidad", "unidad", "categoria", "ultima_actualizacion"]]
+            df_inv.columns = ["Producto", "Cantidad", "Unidad", "Categoria", "Ultima Entrega"]
+            if buscar_inv:
+                df_inv = df_inv[df_inv["Producto"].str.lower().str.contains(buscar_inv.lower())]
+            st.dataframe(df_inv, use_container_width=True, hide_index=True, height=400)
 
 
-# =====================================================
-# VISTA ADMIN
-# =====================================================
+# ==============================================================
+# VISTA ADMIN (ALMACEN)
+# ==============================================================
 else:
-    st.markdown('<div class="page-title">Panel de Almacén</div>', unsafe_allow_html=True)
+    render_page_header("", "Panel de Almacen", "Administracion de inventario y pedidos")
 
-    # Alertas
+    # ── Alert bar ──
     pendientes_list = get_todos_pedidos(estado="pendiente")
     stock_bajo = get_stock_bajo()
-    col_a1, col_a2 = st.columns(2)
-    with col_a1:
-        if pendientes_list:
-            urgentes = [p for p in pendientes_list if p.get("prioridad") == "urgente"]
-            if urgentes:
-                st.error(f"🚨 {len(urgentes)} pedido(s) URGENTE(S)")
-    with col_a2:
-        if stock_bajo:
-            st.warning(f"📉 {len(stock_bajo)} producto(s) con stock bajo")
+    urgentes = [p for p in pendientes_list if p.get("prioridad") == "urgente"]
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(
-        ["Dashboard", "Pedidos", "Catálogo", "Ciclos", "Áreas"]
+    alerts_html = '<div class="alert-bar">'
+    if urgentes:
+        alerts_html += f'<div class="alert-chip alert-chip-red">{len(urgentes)} pedido(s) URGENTE(S)</div>'
+    if len(pendientes_list) - len(urgentes) > 0:
+        alerts_html += f'<div class="alert-chip alert-chip-yellow">{len(pendientes_list) - len(urgentes)} pedido(s) pendiente(s)</div>'
+    if stock_bajo:
+        alerts_html += f'<div class="alert-chip alert-chip-yellow">{len(stock_bajo)} producto(s) con stock bajo</div>'
+    alerts_html += '</div>'
+    if pendientes_list or stock_bajo:
+        st.markdown(alerts_html, unsafe_allow_html=True)
+
+    tab_dash, tab_ped, tab_cat, tab_cicl, tab_areas = st.tabs(
+        ["Dashboard", "Pedidos", "Catalogo", "Ciclos", "Areas"]
     )
 
-    # --- DASHBOARD ---
-    with tab1:
+    # ── DASHBOARD ──
+    with tab_dash:
         ciclos_todos = get_ciclos()
         filtro_ciclo = None
         if ciclos_todos:
@@ -310,56 +644,56 @@ else:
 
         resumen = get_resumen_por_area(filtro_ciclo)
 
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
+        k1, k2, k3, k4 = st.columns(4)
+        with k1:
             st.metric("Total Pedidos", sum(r["total_pedidos"] or 0 for r in resumen))
-        with c2:
+        with k2:
             st.metric("Total Items", int(sum(r["total_items"] or 0 for r in resumen)))
-        with c3:
+        with k3:
             st.metric("Entregados", int(sum(r["entregados"] or 0 for r in resumen)))
-        with c4:
+        with k4:
             st.metric("Pendientes", int(sum(r["pendientes"] or 0 for r in resumen)))
 
         col_chart, col_top = st.columns(2)
 
         with col_chart:
-            st.markdown("#### Consumo por Área")
+            render_section_heading("Consumo por Area")
             if any(r["total_pedidos"] for r in resumen):
                 df_r = pd.DataFrame(resumen)
                 df_r = df_r[df_r["total_pedidos"] > 0].sort_values("total_items", ascending=False)
                 if not df_r.empty:
                     chart = df_r.set_index("area")[["total_items"]].rename(columns={"total_items": "Items"})
-                    st.bar_chart(chart)
+                    st.bar_chart(chart, color="#1a5276")
             else:
-                st.info("No hay pedidos aún.")
+                render_empty_state("", "No hay pedidos en este periodo.")
 
         with col_top:
-            st.markdown("#### Productos más pedidos")
+            render_section_heading("Productos mas pedidos")
             top = get_productos_mas_pedidos(filtro_ciclo)
             if top:
                 df_top = pd.DataFrame(top)
-                df_top.columns = ["Producto", "Categoría", "Unidad", "Stock", "Total"]
+                df_top.columns = ["Producto", "Categoria", "Unidad", "Stock", "Total"]
                 st.dataframe(df_top, use_container_width=True, hide_index=True)
             else:
-                st.info("Sin datos.")
+                render_empty_state("", "Sin datos.")
 
         if stock_bajo:
-            st.markdown("#### Stock bajo")
+            render_section_heading("Alerta de Stock Bajo")
             df_sb = pd.DataFrame(stock_bajo)[["nombre", "stock_almacen", "unidad", "categoria"]]
-            df_sb.columns = ["Producto", "Stock", "Unidad", "Categoría"]
+            df_sb.columns = ["Producto", "Stock", "Unidad", "Categoria"]
             st.dataframe(df_sb, use_container_width=True, hide_index=True)
 
-    # --- PEDIDOS ---
-    with tab2:
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
+    # ── PEDIDOS ──
+    with tab_ped:
+        f1, f2, f3 = st.columns([2, 2, 6])
+        with f1:
             ciclos_todos = get_ciclos()
             filtro = None
             if ciclos_todos:
                 sel = st.selectbox("Ciclo", ["Todos"] + [c["nombre"] for c in ciclos_todos], key="adm_ciclo")
                 if sel != "Todos":
                     filtro = next(c["id"] for c in ciclos_todos if c["nombre"] == sel)
-        with col_f2:
+        with f2:
             estado_f = st.selectbox("Estado", ["Todos", "Pendientes", "Aprobados", "Entregados", "Rechazados"], key="adm_est")
 
         mapa = {"Pendientes": "pendiente", "Aprobados": "aprobado",
@@ -368,22 +702,28 @@ else:
 
         pedidos = get_todos_pedidos(filtro, estado_val)
         if not pedidos:
-            st.info("No hay pedidos con estos filtros.")
+            render_empty_state("", "No hay pedidos con estos filtros.")
         else:
             st.caption(f"{len(pedidos)} pedido(s)")
             for ped in pedidos:
                 estado = ped["estado"]
-                emoji_st = {"pendiente": "🟡", "aprobado": "🔵", "entregado": "🟢", "rechazado": "🔴"}.get(estado, "⚪")
-                urg = " 🔴" if ped.get("prioridad") == "urgente" else ""
-                area_emoji = ped.get("area_emoji", "🏢")
+                urg_class = " order-card-urgent" if ped.get("prioridad") == "urgente" else ""
+                urg_badge = ' <span class="badge badge-red">Urgente</span>' if ped.get("prioridad") == "urgente" else ""
+                area_emoji = ped.get("area_emoji", "")
 
-                with st.expander(
-                    f"{emoji_st}{urg} #{ped['id']} | {area_emoji} {ped['area_nombre']} | {estado.upper()} | {ped['fecha_pedido'][:10]}"
-                ):
-                    if ped.get("prioridad") == "urgente":
-                        st.error("PEDIDO URGENTE")
+                st.markdown(f"""
+                <div class="order-card{urg_class}">
+                    <div class="order-header">
+                        <span class="order-folio">#{ped['id']} {area_emoji} {ped['area_nombre']}{urg_badge}</span>
+                        <span class="order-date">{ped['fecha_pedido'][:10]}</span>
+                    </div>
+                    <div>{render_status_badge(estado)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                with st.expander(f"Gestionar #{ped['id']} - {ped['area_nombre']}"):
                     if ped["notas"]:
-                        st.info(f"{ped['notas']}")
+                        st.info(ped["notas"])
 
                     detalles = get_detalle_pedido(ped["id"])
                     df_d = pd.DataFrame(detalles)[["producto_nombre", "cantidad", "unidad"]]
@@ -409,35 +749,35 @@ else:
                             entregar_pedido(ped["id"])
                             st.rerun()
 
-    # --- CATÁLOGO ---
-    with tab3:
+    # ── CATALOGO ──
+    with tab_cat:
         productos = get_productos(solo_activos=False)
         activos = len([p for p in productos if p["activo"]])
 
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("Productos activos", activos)
-        with c2:
-            st.metric("Categorías", len(set(p["categoria"] for p in productos)) if productos else 0)
+        k1, k2 = st.columns(2)
+        with k1:
+            st.metric("Productos Activos", activos)
+        with k2:
+            st.metric("Categorias", len(set(p["categoria"] for p in productos)) if productos else 0)
 
-        col_masivo, col_individual = st.columns(2)
-
-        with col_masivo:
+        col_m, col_i = st.columns(2)
+        with col_m:
             with st.expander("Cargar desde Excel/CSV"):
-                st.caption("Columnas: nombre, categoria, unidad, stock")
-                archivo = st.file_uploader("Archivo", type=["xlsx", "csv"], key="carga")
+                st.caption("Columnas requeridas: **nombre** | Opcionales: categoria, unidad, stock")
+                archivo = st.file_uploader("Seleccionar archivo", type=["xlsx", "csv"], key="carga",
+                                           label_visibility="collapsed")
                 if archivo:
                     try:
                         df_c = pd.read_csv(archivo) if archivo.name.endswith(".csv") else pd.read_excel(archivo)
                         if "nombre" not in df_c.columns:
-                            st.error("Necesita columna 'nombre'")
+                            st.error("El archivo debe tener una columna 'nombre'")
                         else:
                             for col in ["categoria", "unidad", "stock"]:
                                 if col not in df_c.columns:
                                     df_c[col] = "General" if col == "categoria" else ("pieza" if col == "unidad" else 0)
                             st.dataframe(df_c.head(5), use_container_width=True, hide_index=True)
-                            st.caption(f"{len(df_c)} productos")
-                            if st.button("Cargar", type="primary", use_container_width=True):
+                            st.caption(f"{len(df_c)} productos encontrados")
+                            if st.button("Cargar productos", type="primary", use_container_width=True):
                                 items = [(r["nombre"], r["categoria"], r["unidad"], int(r["stock"]))
                                          for _, r in df_c.iterrows() if pd.notna(r["nombre"])]
                                 agregar_productos_masivo(items)
@@ -446,41 +786,48 @@ else:
                     except Exception as e:
                         st.error(f"Error: {e}")
 
-        with col_individual:
-            with st.expander("Agregar producto"):
+        with col_i:
+            with st.expander("Agregar producto individual"):
                 with st.form("nuevo_prod"):
-                    nombre = st.text_input("Nombre")
-                    categoria = st.text_input("Categoría", value="General")
-                    unidad = st.selectbox("Unidad", ["pieza", "paquete", "caja", "resma", "rollo", "bote", "bolsa", "litro", "kilo"])
-                    stock = st.number_input("Stock", min_value=0, value=0)
-                    if st.form_submit_button("Agregar", use_container_width=True):
+                    nombre = st.text_input("Nombre del producto")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        categoria = st.text_input("Categoria", value="General")
+                    with c2:
+                        unidad = st.selectbox("Unidad", ["pieza", "paquete", "caja", "resma", "rollo", "bote", "bolsa", "litro", "kilo"])
+                    stock = st.number_input("Stock inicial", min_value=0, value=0)
+                    if st.form_submit_button("Agregar Producto", use_container_width=True):
                         if nombre.strip():
                             agregar_producto(nombre.strip(), categoria.strip(), unidad, stock)
-                            st.success(f"'{nombre}' agregado")
+                            st.success(f"'{nombre}' agregado al catalogo")
                             st.rerun()
+                        else:
+                            st.error("El nombre es obligatorio")
 
-        # Lista
         if productos:
-            buscar_p = st.text_input("Buscar en catálogo", key="buscar_cat")
+            buscar_p = st.text_input("Buscar en catalogo", placeholder="Filtrar por nombre...",
+                                      key="buscar_cat", label_visibility="collapsed")
             for cat in sorted(set(p["categoria"] for p in productos)):
                 pc = [p for p in productos if p["categoria"] == cat]
                 if buscar_p:
                     pc = [p for p in pc if buscar_p.lower() in p["nombre"].lower()]
                 if not pc:
                     continue
-                with st.expander(f"{cat} ({len(pc)})"):
+                with st.expander(f"{cat}  ({len(pc)} productos)"):
                     df_cat = pd.DataFrame(pc)[["nombre", "stock_almacen", "unidad", "activo"]]
-                    df_cat["activo"] = df_cat["activo"].map({1: "Si", 0: "No"})
-                    df_cat.columns = ["Producto", "Stock", "Unidad", "Activo"]
+                    df_cat["activo"] = df_cat["activo"].map({1: "Activo", 0: "Inactivo"})
+                    df_cat.columns = ["Producto", "Stock", "Unidad", "Estado"]
                     st.dataframe(df_cat, use_container_width=True, hide_index=True)
 
-    # --- CICLOS ---
-    with tab4:
+    # ── CICLOS ──
+    with tab_cicl:
         ciclo_activo = get_ciclo_activo()
         if ciclo_activo:
-            dias = (datetime.strptime(ciclo_activo["fecha_cierre"], "%Y-%m-%d") - datetime.now()).days
-            st.success(f"**Ciclo activo:** {ciclo_activo['nombre']} — {max(0, dias)} días restantes")
-            if st.button("Cerrar ciclo actual", use_container_width=False):
+            dias = max(0, (datetime.strptime(ciclo_activo["fecha_cierre"], "%Y-%m-%d") - datetime.now()).days)
+            progreso = max(0, min(1.0, 1 - (dias / CICLO_DIAS)))
+            st.success(f"**Ciclo activo:** {ciclo_activo['nombre']}")
+            st.progress(progreso, text=f"{dias} dias restantes de {CICLO_DIAS}")
+            if st.button("Cerrar ciclo actual"):
                 cerrar_ciclo(ciclo_activo["id"])
                 asegurar_ciclo_activo()
                 st.rerun()
@@ -489,42 +836,52 @@ else:
             with st.form("nuevo_ciclo"):
                 hoy = datetime.now()
                 num = len(get_ciclos()) + 1
-                nombre_ciclo = st.text_input("Nombre", value=f"Ciclo #{num} — {hoy.strftime('%B %Y')}")
+                nombre_ciclo = st.text_input("Nombre", value=f"Ciclo #{num} - {hoy.strftime('%B %Y')}")
                 c1, c2 = st.columns(2)
                 with c1:
                     f_inicio = st.date_input("Inicio", value=hoy)
                 with c2:
                     f_cierre = st.date_input("Cierre", value=hoy + timedelta(days=CICLO_DIAS))
-                if st.form_submit_button("Crear", type="primary"):
+                if st.form_submit_button("Crear Ciclo", type="primary"):
                     crear_ciclo(nombre_ciclo, num, f_inicio.strftime("%Y-%m-%d"), f_cierre.strftime("%Y-%m-%d"))
                     st.rerun()
 
-        st.markdown("#### Historial")
+        render_section_heading("Historial de Ciclos")
         for c in get_ciclos():
-            e = "🟢" if c["estado"] == "abierto" else "⚫"
-            st.markdown(f"{e} **{c['nombre']}** | {c['fecha_inicio']} → {c['fecha_cierre']}")
+            badge = render_status_badge("entregado") if c["estado"] == "abierto" else '<span class="badge badge-yellow">Cerrado</span>'
+            st.markdown(f"""
+            <div class="order-card" style="padding:12px 16px;">
+                <div class="order-header">
+                    <span class="order-folio">{c['nombre']}</span>
+                    <span>{badge}</span>
+                </div>
+                <span class="order-date">{c['fecha_inicio']}  &rarr;  {c['fecha_cierre']}</span>
+            </div>
+            """, unsafe_allow_html=True)
 
-    # --- ÁREAS ---
-    with tab5:
+    # ── AREAS ──
+    with tab_areas:
+        render_section_heading("Areas y Lideres")
         for a in areas:
-            ea = a.get("emoji", "🏢")
-            with st.expander(f"{ea} {a['nombre']}"):
-                lider = st.text_input("Líder", value=a["lider"] or "", key=f"l_{a['id']}", placeholder="Nombre del líder")
+            ea = a.get("emoji", "")
+            with st.expander(f"{ea}  {a['nombre']}"):
+                lider = st.text_input("Lider del area", value=a["lider"] or "", key=f"l_{a['id']}",
+                                       placeholder="Nombre del lider responsable")
                 if st.button("Guardar", key=f"sl_{a['id']}"):
                     actualizar_lider(a["id"], lider)
+                    st.success("Lider actualizado")
                     st.rerun()
-                inv = get_inventario_area(a["id"])
-                if inv:
-                    df_i = pd.DataFrame(inv)[["producto_nombre", "cantidad", "unidad"]]
+                inv_a = get_inventario_area(a["id"])
+                if inv_a:
+                    render_section_heading("Inventario asignado")
+                    df_i = pd.DataFrame(inv_a)[["producto_nombre", "cantidad", "unidad"]]
                     df_i.columns = ["Producto", "Cantidad", "Unidad"]
                     st.dataframe(df_i, use_container_width=True, hide_index=True)
 
         st.divider()
-        if st.button("Respaldar Base de Datos"):
-            path = backup_db()
-            if path:
-                st.success(f"Respaldo: {path}")
-
-# Footer
-st.divider()
-st.caption("PROESA Soluciones en Salud — Sistema de Inventario v2.0")
+        col_bk, _ = st.columns([1, 3])
+        with col_bk:
+            if st.button("Respaldar Base de Datos"):
+                path = backup_db()
+                if path:
+                    st.success(f"Respaldo creado")
