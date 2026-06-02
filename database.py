@@ -1,12 +1,13 @@
 import sqlite3
 import os
 import shutil
+import calendar
 from datetime import datetime, timedelta
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inventario.db")
 BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backups")
 
-CICLO_DIAS = 20  # Duración de cada ciclo en días
+CICLO_DIAS = 30  # Referencia visual (ciclos son mensuales)
 
 
 def get_conn():
@@ -210,7 +211,7 @@ def cargar_catalogo_ejemplo():
 # --- Ciclos automáticos ---
 
 def asegurar_ciclo_activo():
-    """Crea automáticamente un nuevo ciclo de 20 días si no hay uno abierto."""
+    """Crea automáticamente un nuevo ciclo mensual si no hay uno abierto."""
     conn = get_conn()
     activo = conn.execute(
         "SELECT * FROM ciclos WHERE estado='abierto' ORDER BY fecha_inicio DESC LIMIT 1"
@@ -230,10 +231,18 @@ def asegurar_ciclo_activo():
         num = (ultimo["max_num"] or 0) + 1
 
         hoy = datetime.now()
-        inicio = hoy.strftime("%Y-%m-%d")
-        cierre = (hoy + timedelta(days=CICLO_DIAS)).strftime("%Y-%m-%d")
-        mes = hoy.strftime("%B %Y").capitalize()
-        nombre = f"Ciclo #{num} — {mes}"
+        # Ciclo mensual: del 1 al último día del mes actual
+        inicio = hoy.replace(day=1).strftime("%Y-%m-%d")
+        ultimo_dia = calendar.monthrange(hoy.year, hoy.month)[1]
+        cierre = hoy.replace(day=ultimo_dia).strftime("%Y-%m-%d")
+
+        meses_es = {
+            1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+            5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+            9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+        }
+        mes = f"{meses_es[hoy.month]} {hoy.year}"
+        nombre = f"{mes}"
 
         conn.execute(
             "INSERT INTO ciclos (nombre, numero, fecha_inicio, fecha_cierre) VALUES (?, ?, ?, ?)",

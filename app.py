@@ -391,9 +391,11 @@ with st.sidebar:
     st.divider()
     ciclo = get_ciclo_activo()
     if ciclo:
-        dias = (datetime.strptime(ciclo["fecha_cierre"], "%Y-%m-%d") - datetime.now()).days
-        dias = max(0, dias)
-        progreso = max(0, min(1.0, 1 - (dias / CICLO_DIAS)))
+        fecha_inicio = datetime.strptime(ciclo["fecha_inicio"], "%Y-%m-%d")
+        fecha_cierre = datetime.strptime(ciclo["fecha_cierre"], "%Y-%m-%d")
+        dias = max(0, (fecha_cierre - datetime.now()).days)
+        total_dias = max(1, (fecha_cierre - fecha_inicio).days)
+        progreso = max(0, min(1.0, 1 - (dias / total_dias)))
         st.markdown(f"""
         <div class="sidebar-ciclo">
             <p class="sidebar-ciclo-title">CICLO ACTIVO</p>
@@ -818,10 +820,13 @@ else:
     with tab_cicl:
         ciclo_activo = get_ciclo_activo()
         if ciclo_activo:
-            dias = max(0, (datetime.strptime(ciclo_activo["fecha_cierre"], "%Y-%m-%d") - datetime.now()).days)
-            progreso = max(0, min(1.0, 1 - (dias / CICLO_DIAS)))
+            f_ini = datetime.strptime(ciclo_activo["fecha_inicio"], "%Y-%m-%d")
+            f_fin = datetime.strptime(ciclo_activo["fecha_cierre"], "%Y-%m-%d")
+            dias = max(0, (f_fin - datetime.now()).days)
+            total_dias = max(1, (f_fin - f_ini).days)
+            progreso = max(0, min(1.0, 1 - (dias / total_dias)))
             st.success(f"**Ciclo activo:** {ciclo_activo['nombre']}")
-            st.progress(progreso, text=f"{dias} dias restantes de {CICLO_DIAS}")
+            st.progress(progreso, text=f"{dias} dias restantes")
             if st.button("Cerrar ciclo actual"):
                 cerrar_ciclo(ciclo_activo["id"])
                 asegurar_ciclo_activo()
@@ -829,14 +834,18 @@ else:
 
         with st.expander("Crear ciclo manual"):
             with st.form("nuevo_ciclo"):
+                import calendar as cal_mod
                 hoy = datetime.now()
                 num = len(get_ciclos()) + 1
-                nombre_ciclo = st.text_input("Nombre", value=f"Ciclo #{num} - {hoy.strftime('%B %Y')}")
+                meses_es = {1:"Enero",2:"Febrero",3:"Marzo",4:"Abril",5:"Mayo",6:"Junio",
+                            7:"Julio",8:"Agosto",9:"Septiembre",10:"Octubre",11:"Noviembre",12:"Diciembre"}
+                nombre_ciclo = st.text_input("Nombre", value=f"{meses_es[hoy.month]} {hoy.year}")
                 c1, c2 = st.columns(2)
                 with c1:
-                    f_inicio = st.date_input("Inicio", value=hoy)
+                    f_inicio = st.date_input("Inicio", value=hoy.replace(day=1))
                 with c2:
-                    f_cierre = st.date_input("Cierre", value=hoy + timedelta(days=CICLO_DIAS))
+                    ultimo_dia = cal_mod.monthrange(hoy.year, hoy.month)[1]
+                    f_cierre = st.date_input("Cierre", value=hoy.replace(day=ultimo_dia))
                 if st.form_submit_button("Crear Ciclo", type="primary"):
                     crear_ciclo(nombre_ciclo, num, f_inicio.strftime("%Y-%m-%d"), f_cierre.strftime("%Y-%m-%d"))
                     st.rerun()
