@@ -462,6 +462,8 @@ if not is_admin:
             if not productos:
                 render_empty_state("", "El catalogo esta vacio. Espera a que el administrador cargue los productos.")
             else:
+                # Prefijo para keys de widgets — cambia al enviar pedido para resetear todo
+                form_v = st.session_state.get("form_version", 0)
                 # Mensaje de confirmacion
                 if st.session_state.pop("pedido_enviado", None):
                     st.success("Gracias, tu pedido ha sido enviado. El equipo de almacen lo revisara pronto.")
@@ -511,7 +513,7 @@ if not is_admin:
                                 with r3:
                                     cant = st.number_input(
                                         "c", min_value=0, max_value=999, value=0,
-                                        key=f"prod_{p['id']}", label_visibility="collapsed",
+                                        key=f"prod_{p['id']}_v{form_v}", label_visibility="collapsed",
                                     )
                                     if cant > 0:
                                         items_pedido.append((p["id"], cant))
@@ -530,18 +532,14 @@ if not is_admin:
                         st.markdown(f"**Total: {len(productos_sel_info)} producto(s)**")
 
                         notas = st.text_area("Notas (opcional)", placeholder="Ej: Necesario para evento del viernes",
-                                             key="notas_pedido")
+                                             key=f"notas_pedido_v{form_v}")
 
                         if st.button("Enviar Pedido", type="primary", use_container_width=True):
                             prio = "urgente" if prioridad == "Urgente" else "normal"
                             pedido_id = crear_pedido(area_id, ciclo["id"], items_pedido, notas, prio)
                             st.session_state["pedido_enviado"] = pedido_id
-                            # Limpiar cantidades eliminando keys para que se recreen en 0
-                            keys_to_del = [f"prod_{p['id']}" for p in productos if f"prod_{p['id']}" in st.session_state]
-                            if "notas_pedido" in st.session_state:
-                                keys_to_del.append("notas_pedido")
-                            for k in keys_to_del:
-                                del st.session_state[k]
+                            # Incrementar version para crear widgets nuevos con valor 0
+                            st.session_state["form_version"] = form_v + 1
                             st.rerun()
                     else:
                         st.caption("Selecciona productos del catalogo para armar tu pedido.")
