@@ -535,15 +535,13 @@ if not is_admin:
                         if st.button("Enviar Pedido", type="primary", use_container_width=True):
                             prio = "urgente" if prioridad == "Urgente" else "normal"
                             pedido_id = crear_pedido(area_id, ciclo["id"], items_pedido, notas, prio)
-                            st.balloons()
                             st.session_state["pedido_enviado"] = pedido_id
-                            # Limpiar cantidades
-                            for p in productos:
-                                key = f"prod_{p['id']}"
-                                if key in st.session_state:
-                                    st.session_state[key] = 0
+                            # Limpiar cantidades eliminando keys para que se recreen en 0
+                            keys_to_del = [f"prod_{p['id']}" for p in productos if f"prod_{p['id']}" in st.session_state]
                             if "notas_pedido" in st.session_state:
-                                st.session_state["notas_pedido"] = ""
+                                keys_to_del.append("notas_pedido")
+                            for k in keys_to_del:
+                                del st.session_state[k]
                             st.rerun()
                     else:
                         st.caption("Selecciona productos del catalogo para armar tu pedido.")
