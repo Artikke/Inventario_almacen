@@ -516,25 +516,15 @@ if not is_admin:
 
                 # ── Summary panel ──
                 with col_resumen:
+                    prio_label = "Urgente" if prioridad == "Urgente" else "Normal"
+                    st.markdown(f"**Resumen del Pedido** — {prio_label}")
+                    st.divider()
+
                     if productos_sel_info:
-                        items_html = ""
                         for nombre, cant, unidad in productos_sel_info:
-                            items_html += f"""
-                            <div class="summary-item">
-                                <span class="summary-item-name">{nombre}</span>
-                                <span class="summary-item-qty">{cant} {unidad}</span>
-                            </div>"""
-                        prio_badge = '<span class="badge badge-red">Urgente</span>' if prioridad == "Urgente" else '<span class="badge badge-blue">Normal</span>'
-                        st.markdown(f"""
-                        <div class="summary-panel">
-                            <div class="summary-title">Resumen del Pedido {prio_badge}</div>
-                            {items_html}
-                            <div class="summary-total">
-                                <span>Total productos</span>
-                                <span>{len(productos_sel_info)}</span>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+                            st.markdown(f"- **{nombre}** — {cant} {unidad}")
+                        st.divider()
+                        st.markdown(f"**Total: {len(productos_sel_info)} producto(s)**")
 
                         notas = st.text_area("Notas (opcional)", placeholder="Ej: Necesario para evento del viernes",
                                              key="notas_pedido")
@@ -546,14 +536,7 @@ if not is_admin:
                             st.success(f"Pedido #{pedido_id} enviado correctamente")
                             st.rerun()
                     else:
-                        st.markdown("""
-                        <div class="summary-panel" style="text-align:center; color: var(--proesa-muted);">
-                            <div class="summary-title">Resumen del Pedido</div>
-                            <p style="font-size:0.85rem; padding: 20px 0;">
-                                Selecciona productos del catalogo para armar tu pedido.
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.caption("Selecciona productos del catalogo para armar tu pedido.")
 
     # ── MIS PEDIDOS ──
     with tab_mis:
