@@ -125,7 +125,7 @@ section[data-testid="stSidebar"] .stProgress > div > div > div {
 /* ── Page header ── */
 .page-header {
     display: flex; align-items: center; gap: 14px;
-    margin-bottom: 24px; padding-bottom: 16px;
+    margin-top: 20px; margin-bottom: 24px; padding-bottom: 16px;
     border-bottom: 2px solid var(--proesa-border);
 }
 .page-header-icon { font-size: 1.8rem; }
@@ -480,26 +480,21 @@ if not is_admin:
 
                         with st.expander(f"{cat}  ({len(prods_cat)})", expanded=bool(buscar)):
                             # Table header
-                            hdr1, hdr2, hdr3, hdr4 = st.columns([4, 1.5, 1.5, 1])
+                            hdr1, hdr2, hdr3 = st.columns([4, 1.5, 1])
                             with hdr1:
                                 st.caption("**PRODUCTO**")
                             with hdr2:
                                 st.caption("**UNIDAD**")
                             with hdr3:
-                                st.caption("**STOCK**")
-                            with hdr4:
                                 st.caption("**CANT.**")
 
                             for p in prods_cat:
-                                r1, r2, r3, r4 = st.columns([4, 1.5, 1.5, 1])
+                                r1, r2, r3 = st.columns([4, 1.5, 1])
                                 with r1:
                                     st.markdown(f"**{p['nombre']}**")
                                 with r2:
                                     st.caption(p["unidad"])
                                 with r3:
-                                    stock = p["stock_almacen"]
-                                    st.markdown(render_stock_badge(stock), unsafe_allow_html=True)
-                                with r4:
                                     cant = st.number_input(
                                         "c", min_value=0, max_value=999, value=0,
                                         key=f"prod_{p['id']}", label_visibility="collapsed",
