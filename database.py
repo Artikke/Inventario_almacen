@@ -130,7 +130,7 @@ def init_db():
 
 
 def cargar_catalogo_ejemplo():
-    """Carga un catálogo de ejemplo con productos típicos de oficina."""
+    """Carga el catálogo oficial de Papelería PROESA."""
     conn = get_conn()
     count = conn.execute("SELECT COUNT(*) FROM productos").fetchone()[0]
     if count > 0:
@@ -139,80 +139,60 @@ def cargar_catalogo_ejemplo():
 
     productos = [
         # Papelería
-        ("Hojas blancas carta (resma 500)", "Papelería", "resma", 50),
-        ("Hojas blancas oficio (resma 500)", "Papelería", "resma", 30),
-        ("Folder tamaño carta", "Papelería", "paquete", 40),
-        ("Folder tamaño oficio", "Papelería", "paquete", 30),
-        ("Sobre manila carta", "Papelería", "paquete", 25),
-        ("Sobre manila oficio", "Papelería", "paquete", 20),
-        ("Libreta profesional rayada", "Papelería", "pieza", 60),
-        ("Libreta profesional cuadro", "Papelería", "pieza", 40),
-        ("Post-it notas adhesivas (paquete)", "Papelería", "paquete", 50),
-        ("Separadores de colores", "Papelería", "paquete", 30),
-        ("Clips estándar (caja)", "Papelería", "caja", 40),
-        ("Clips mariposa (caja)", "Papelería", "caja", 25),
-        ("Grapas estándar (caja)", "Papelería", "caja", 35),
-        ("Ligas de hule (bolsa)", "Papelería", "bolsa", 20),
+        ("Block de vales naranja", "Papelería", "pieza", 0),
+        ("Block de vales azules", "Papelería", "pieza", 0),
+        ("Folder tamaño carta beige", "Papelería", "pieza", 0),
+        ("Folder tamaño oficio azul", "Papelería", "pieza", 0),
+        ("Mica pliego", "Papelería", "pieza", 0),
+        ("Protector de hojas tamaño carta", "Papelería", "paquete", 0),
+        ("Sobre para efectivo", "Papelería", "pieza", 0),
 
         # Escritura
-        ("Pluma azul punto mediano", "Escritura", "pieza", 100),
-        ("Pluma negra punto mediano", "Escritura", "pieza", 100),
-        ("Pluma roja punto mediano", "Escritura", "pieza", 50),
-        ("Lápiz #2 c/goma", "Escritura", "pieza", 80),
-        ("Marcatextos amarillo", "Escritura", "pieza", 40),
-        ("Marcatextos verde", "Escritura", "pieza", 30),
-        ("Marcatextos rosa", "Escritura", "pieza", 30),
-        ("Marcador permanente negro", "Escritura", "pieza", 30),
-        ("Marcador para pizarrón negro", "Escritura", "pieza", 20),
-        ("Marcador para pizarrón azul", "Escritura", "pieza", 20),
-        ("Corrector líquido", "Escritura", "pieza", 25),
-        ("Borrador blanco", "Escritura", "pieza", 40),
+        ("Bolígrafo tinta azul", "Escritura", "pieza", 0),
+        ("Bolígrafo tinta negra", "Escritura", "pieza", 0),
+        ("Bolígrafo tinta roja", "Escritura", "pieza", 0),
+        ("Bolígrafo tinta verde", "Escritura", "pieza", 0),
+        ("Goma", "Escritura", "pieza", 0),
+        ("Lápiz", "Escritura", "pieza", 0),
+        ("Marca textos amarillo", "Escritura", "pieza", 0),
+        ("Marca textos azul", "Escritura", "pieza", 0),
+        ("Marca textos naranja", "Escritura", "pieza", 0),
+        ("Marca textos rosa", "Escritura", "pieza", 0),
+        ("Marca textos verde", "Escritura", "pieza", 0),
+        ("Plumón punto fino azul", "Escritura", "pieza", 0),
+        ("Plumón punto fino negro", "Escritura", "pieza", 0),
+        ("Plumón punto fino rojo", "Escritura", "pieza", 0),
+        ("Plumones lavables para pizarrón", "Escritura", "paquete", 0),
+        ("Sacapuntas", "Escritura", "pieza", 0),
 
-        # Impresión
-        ("Tóner negro HP universal", "Impresión", "pieza", 10),
-        ("Tóner color HP universal", "Impresión", "pieza", 6),
-        ("Cartucho tinta negro", "Impresión", "pieza", 8),
-        ("Cartucho tinta color", "Impresión", "pieza", 6),
-        ("Papel fotográfico carta", "Impresión", "paquete", 10),
+        # Sujetadores
+        ("Clip #2", "Sujetadores", "caja", 0),
+        ("Clip tipo mariposa", "Sujetadores", "caja", 0),
+        ("Grapas", "Sujetadores", "caja", 0),
 
-        # Organización
-        ("Archivero de cartón", "Organización", "pieza", 20),
-        ("Charola organizadora escritorio", "Organización", "pieza", 15),
-        ("Engrapadora estándar", "Organización", "pieza", 10),
-        ("Perforadora 2 orificios", "Organización", "pieza", 10),
-        ("Tijeras de oficina", "Organización", "pieza", 15),
-        ("Cinta adhesiva transparente", "Organización", "pieza", 30),
-        ("Cinta canela para empaque", "Organización", "rollo", 15),
-        ("Calculadora de escritorio", "Organización", "pieza", 8),
+        # Adhesivos
+        ("Diurex", "Adhesivos", "pieza", 0),
+        ("Lápiz adhesivo", "Adhesivos", "pieza", 0),
+        ("Pegamento Kola loka", "Adhesivos", "pieza", 0),
 
-        # Tecnología
-        ("Mouse USB", "Tecnología", "pieza", 10),
-        ("Teclado USB", "Tecnología", "pieza", 8),
-        ("Cable USB-C", "Tecnología", "pieza", 15),
-        ("Cable HDMI 2m", "Tecnología", "pieza", 8),
-        ("Memoria USB 32GB", "Tecnología", "pieza", 10),
-        ("Pilas AA (paquete 4)", "Tecnología", "paquete", 20),
-        ("Pilas AAA (paquete 4)", "Tecnología", "paquete", 15),
-        ("Audífonos con micrófono", "Tecnología", "pieza", 10),
+        # Herramientas
+        ("Cutter", "Herramientas", "pieza", 0),
+        ("Engrapadora", "Herramientas", "pieza", 0),
+        ("Quita grapas", "Herramientas", "pieza", 0),
+        ("Tijeras", "Herramientas", "pieza", 0),
 
-        # Limpieza y Higiene
-        ("Gel antibacterial 500ml", "Limpieza y Higiene", "pieza", 30),
-        ("Toallas húmedas desinfectantes", "Limpieza y Higiene", "paquete", 25),
-        ("Papel higiénico (paquete 4)", "Limpieza y Higiene", "paquete", 40),
-        ("Servilletas (paquete)", "Limpieza y Higiene", "paquete", 30),
-        ("Jabón líquido para manos 500ml", "Limpieza y Higiene", "pieza", 20),
-        ("Aromatizante en aerosol", "Limpieza y Higiene", "pieza", 15),
-        ("Bolsas de basura grandes", "Limpieza y Higiene", "rollo", 20),
+        # Pilas
+        ("Pilas AA", "Pilas", "paquete", 0),
+        ("Pilas AAA", "Pilas", "paquete", 0),
+        ("Pilas Cuadrada", "Pilas", "pieza", 0),
+        ("Pilas D", "Pilas", "pieza", 0),
 
-        # Cafetería
-        ("Café soluble 200g", "Cafetería", "bote", 15),
-        ("Azúcar (kilo)", "Cafetería", "kilo", 10),
-        ("Sustituto de crema", "Cafetería", "bote", 10),
-        ("Vasos desechables 8oz (paquete 50)", "Cafetería", "paquete", 20),
-        ("Cucharas desechables (paquete 50)", "Cafetería", "paquete", 15),
-        ("Agua purificada garrafón 20L", "Cafetería", "pieza", 20),
-        ("Galletas surtido (paquete)", "Cafetería", "paquete", 10),
-        ("Té surtido (caja 25 sobres)", "Cafetería", "caja", 10),
+        # Protección
+        ("Manga plástica cubre polvo", "Protección", "pieza", 0),
+
+        # Varios
+        ("Papel aluminio rollo", "Varios", "rollo", 0),
+        ("Porta gafete cordón retráctil", "Varios", "pieza", 0),
     ]
 
     for nombre, categoria, unidad, stock in productos:
