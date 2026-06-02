@@ -382,11 +382,20 @@ with st.sidebar:
     is_admin = "Admin" in rol
 
     if not is_admin:
+        # Si cambia a líder, resetear auth admin
+        if st.session_state.get("admin_auth", False):
+            st.session_state["admin_auth"] = False
         st.divider()
         st.markdown('<p class="sidebar-section-label">Selecciona tu area</p>', unsafe_allow_html=True)
         area_sel = st.selectbox("Area", area_nombres, label_visibility="collapsed")
         area = next(a for a in areas if a["nombre"] == area_sel)
         area_id = area["id"]
+
+    if is_admin and st.session_state.get("admin_auth", False):
+        st.divider()
+        if st.button("Cerrar acceso admin", use_container_width=True):
+            st.session_state["admin_auth"] = False
+            st.rerun()
 
     st.divider()
     ciclo = get_ciclo_activo()
@@ -608,6 +617,22 @@ if not is_admin:
 # VISTA ADMIN (ALMACEN)
 # ==============================================================
 else:
+    ADMIN_PIN = st.secrets.get("ADMIN_PIN", "1234")
+
+    if not st.session_state.get("admin_auth", False):
+        render_page_header("", "Acceso Almacen", "Ingresa el PIN para continuar")
+
+        col_pin, _ = st.columns([1, 2])
+        with col_pin:
+            pin = st.text_input("PIN de almacen", type="password", placeholder="Ingresa el PIN")
+            if st.button("Entrar", type="primary", use_container_width=True):
+                if pin == ADMIN_PIN:
+                    st.session_state["admin_auth"] = True
+                    st.rerun()
+                else:
+                    st.error("PIN incorrecto. Intenta de nuevo.")
+        st.stop()
+
     render_page_header("", "Panel de Almacen", "Administracion de inventario y pedidos")
 
     # ── Alert bar ──
