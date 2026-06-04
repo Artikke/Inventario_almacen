@@ -479,16 +479,18 @@ async function submitPedido() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
 
     try {
+        // Admin orders skip leader approval step
+        const esAdmin = currentUser.rol === 'admin';
         await db.collection('pedidos').add({
             uid: currentUid,
             nombreEmpleado: currentUser.nombre,
             area: currentUser.area,
             detalles: detalles,
-            estado: 'pendiente',
+            estado: esAdmin ? 'aprobado_lider' : 'pendiente',
             fecha: firebase.firestore.FieldValue.serverTimestamp(),
-            aprobadoPorLider: null,
+            aprobadoPorLider: esAdmin ? currentUid : null,
             aprobadoPorAdmin: null,
-            nombreLider: null,
+            nombreLider: esAdmin ? currentUser.nombre : null,
             nombreAdmin: null,
             noInventario: null
         });
@@ -510,9 +512,16 @@ async function showMisPedidos() {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    const snap = await db.collection('pedidos')
-        .where('uid', '==', currentUid)
-        .get();
+    let snap;
+    try {
+        snap = await db.collection('pedidos')
+            .where('uid', '==', currentUid)
+            .get();
+    } catch (e) {
+        main.innerHTML = `<div class="alert alert-danger">Error al cargar pedidos: ${e.message}</div>`;
+        console.error('showMisPedidos error:', e);
+        return;
+    }
 
     if (snap.empty) {
         main.innerHTML = `<div class="empty-state">
@@ -575,10 +584,17 @@ async function showAprobar() {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    const snap = await db.collection('pedidos')
-        .where('area', '==', currentUser.area)
-        .where('estado', '==', 'pendiente')
-        .get();
+    let snap;
+    try {
+        snap = await db.collection('pedidos')
+            .where('area', '==', currentUser.area)
+            .where('estado', '==', 'pendiente')
+            .get();
+    } catch (e) {
+        main.innerHTML = `<div class="alert alert-danger">Error al cargar: ${e.message}</div>`;
+        console.error('showAprobar error:', e);
+        return;
+    }
 
     if (snap.empty) {
         main.innerHTML = `<div class="empty-state">
@@ -679,7 +695,14 @@ async function showAdminPedidos(filtro) {
         query = query.where('estado', '==', filtro);
     }
 
-    const snap = await query.get();
+    let snap;
+    try {
+        snap = await query.get();
+    } catch (e) {
+        main.innerHTML = `<div class="alert alert-danger">Error al cargar pedidos: ${e.message}</div>`;
+        console.error('showAdminPedidos error:', e);
+        return;
+    }
     // Sort by date descending in JS
     const adminPedidos = [];
     snap.forEach(d => adminPedidos.push({ id: d.id, ...d.data() }));
@@ -770,9 +793,16 @@ async function showExportar() {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    const snap = await db.collection('pedidos')
-        .where('estado', '==', 'aprobado')
-        .get();
+    let snap;
+    try {
+        snap = await db.collection('pedidos')
+            .where('estado', '==', 'aprobado')
+            .get();
+    } catch (e) {
+        main.innerHTML = `<div class="alert alert-danger">Error al cargar: ${e.message}</div>`;
+        console.error('showExportar error:', e);
+        return;
+    }
 
     // Sort by date descending in JS
     const exportPedidos = [];
