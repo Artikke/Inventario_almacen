@@ -880,7 +880,7 @@ function toggleAllExport(checked) {
     document.querySelectorAll('.export-check').forEach(cb => cb.checked = state);
 }
 
-function descargarExcel() {
+async function descargarExcel() {
     const noInv = document.getElementById('noInventario').value.trim() || 'SIN-NUMERO';
     const checked = document.querySelectorAll('.export-check:checked');
 
@@ -902,33 +902,65 @@ function descargarExcel() {
         });
     });
 
-    // Build Excel data
-    const data = [
-        ['No. Inventario', 'Descripcion de Linea', 'UM', 'Cant. Orden']
-    ];
-
-    Object.values(consolidated).forEach(item => {
-        data.push([noInv, item.nombre, item.unidad, item.cantidad]);
-    });
-
-    // Create workbook with SheetJS
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(data);
+    // Create workbook with ExcelJS (supports styling)
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Pedido Proveedor');
 
     // Column widths
-    ws['!cols'] = [
-        { wch: 18 },  // No. Inventario
-        { wch: 35 },  // Descripcion
-        { wch: 12 },  // UM
-        { wch: 12 }   // Cant. Orden
+    ws.columns = [
+        { header: 'No. Inventario', key: 'inv', width: 20 },
+        { header: 'Descripcion de Linea', key: 'desc', width: 38 },
+        { header: 'UM', key: 'um', width: 14 },
+        { header: 'Cant. Orden', key: 'cant', width: 14 }
     ];
 
-    // Style header (SheetJS community edition has limited styling, but we set what we can)
-    XLSX.utils.book_append_sheet(wb, ws, 'Pedido Proveedor');
+    // Style header row — blue background (#1A5276), white bold text
+    const headerRow = ws.getRow(1);
+    headerRow.eachCell(cell => {
+        cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF1A5276' }
+        };
+        cell.font = {
+            color: { argb: 'FFFFFFFF' },
+            bold: true,
+            size: 11
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+            top:    { style: 'thin', color: { argb: 'FF0E3650' } },
+            bottom: { style: 'thin', color: { argb: 'FF0E3650' } },
+            left:   { style: 'thin', color: { argb: 'FF0E3650' } },
+            right:  { style: 'thin', color: { argb: 'FF0E3650' } }
+        };
+    });
+    headerRow.height = 22;
+
+    // Add data rows
+    Object.values(consolidated).forEach(item => {
+        const row = ws.addRow({
+            inv: noInv,
+            desc: item.nombre,
+            um: item.unidad,
+            cant: item.cantidad
+        });
+        row.eachCell(cell => {
+            cell.border = {
+                top:    { style: 'thin', color: { argb: 'FFD4D4D4' } },
+                bottom: { style: 'thin', color: { argb: 'FFD4D4D4' } },
+                left:   { style: 'thin', color: { argb: 'FFD4D4D4' } },
+                right:  { style: 'thin', color: { argb: 'FFD4D4D4' } }
+            };
+            cell.alignment = { vertical: 'middle' };
+        });
+    });
 
     // Download
+    const buffer = await wb.xlsx.writeBuffer();
     const fecha = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `PROESA_Pedido_${fecha}.xlsx`);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `PROESA_Pedido_${fecha}.xlsx`);
 
     showAlert(`Excel descargado con ${Object.keys(consolidated).length} productos`, 'success');
 
