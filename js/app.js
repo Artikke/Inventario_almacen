@@ -173,13 +173,32 @@ function showApp() {
 }
 
 // ─── Setup (first time) ───
-function toggleSetup(show) {
+async function toggleSetup(show) {
+    if (show) {
+        // Check if admin already exists — block setup if so
+        const existing = await db.collection('usuarios').where('rol', '==', 'admin').limit(1).get();
+        if (!existing.empty) {
+            const alert = document.getElementById('loginAlert');
+            alert.textContent = 'El sistema ya fue configurado. Inicia sesion con tu usuario.';
+            alert.classList.remove('d-none');
+            return;
+        }
+    }
     document.getElementById('setupFormDiv').classList.toggle('d-none', !show);
     document.getElementById('loginFormDiv').classList.toggle('d-none', show);
     document.getElementById('setupToggle').classList.toggle('d-none', show);
 }
 
 async function setupAdmin() {
+    // Double-check no admin exists
+    const existing = await db.collection('usuarios').where('rol', '==', 'admin').limit(1).get();
+    if (!existing.empty) {
+        const alert = document.getElementById('loginAlert');
+        alert.textContent = 'El sistema ya fue configurado. No se puede crear otro admin.';
+        alert.classList.remove('d-none');
+        return;
+    }
+
     const nombre = document.getElementById('setupNombre').value.trim();
     const user   = document.getElementById('setupUser').value.trim();
     const pass   = document.getElementById('setupPass').value;
