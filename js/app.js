@@ -339,17 +339,22 @@ async function showNuevoPedido() {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    const snap = await db.collection('productos').where('activo', '==', true).orderBy('categoria').get();
+    const snap = await db.collection('productos').where('activo', '==', true).get();
     const productos = {};
     snap.forEach(d => {
         const p = d.data();
         if (!productos[p.categoria]) productos[p.categoria] = [];
         productos[p.categoria].push({ id: d.id, ...p });
     });
+    // Sort categories alphabetically
+    const sortedProductos = Object.keys(productos).sort().reduce((obj, key) => {
+        obj[key] = productos[key];
+        return obj;
+    }, {});
 
     let accordionItems = '';
     let idx = 0;
-    for (const [cat, items] of Object.entries(productos)) {
+    for (const [cat, items] of Object.entries(sortedProductos)) {
         const rows = items.map(p => `
             <tr>
                 <td>${p.nombre}</td>
@@ -507,7 +512,6 @@ async function showMisPedidos() {
 
     const snap = await db.collection('pedidos')
         .where('uid', '==', currentUid)
-        .orderBy('fecha', 'desc')
         .get();
 
     if (snap.empty) {
@@ -520,9 +524,13 @@ async function showMisPedidos() {
         return;
     }
 
+    // Sort by date descending in JS
+    const pedidos = [];
+    snap.forEach(d => pedidos.push({ id: d.id, ...d.data() }));
+    pedidos.sort((a, b) => (b.fecha?.toMillis() || 0) - (a.fecha?.toMillis() || 0));
+
     let cards = '';
-    snap.forEach(d => {
-        const p = d.data();
+    pedidos.forEach(p => {
         const fecha = p.fecha ? p.fecha.toDate().toLocaleDateString('es-MX') : 'Pendiente';
         const items = (p.detalles || []).map(i =>
             `<li class="list-group-item d-flex justify-content-between py-1 px-2">
@@ -535,7 +543,7 @@ async function showMisPedidos() {
             <div class="col-md-6 col-lg-4 mb-3">
                 <div class="card card-proesa h-100">
                     <div class="card-header d-flex justify-content-between align-items-center bg-white border-bottom">
-                        <strong>Pedido #${d.id.slice(-5).toUpperCase()}</strong>
+                        <strong>Pedido #${p.id.slice(-5).toUpperCase()}</strong>
                         ${badgeEstado(p.estado)}
                     </div>
                     <div class="card-body p-0">
@@ -570,7 +578,6 @@ async function showAprobar() {
     const snap = await db.collection('pedidos')
         .where('area', '==', currentUser.area)
         .where('estado', '==', 'pendiente')
-        .orderBy('fecha', 'desc')
         .get();
 
     if (snap.empty) {
@@ -581,9 +588,13 @@ async function showAprobar() {
         return;
     }
 
+    // Sort by date descending in JS
+    const pedidosAprobar = [];
+    snap.forEach(d => pedidosAprobar.push({ id: d.id, ...d.data() }));
+    pedidosAprobar.sort((a, b) => (b.fecha?.toMillis() || 0) - (a.fecha?.toMillis() || 0));
+
     let cards = '';
-    snap.forEach(d => {
-        const p = d.data();
+    pedidosAprobar.forEach(p => {
         const fecha = p.fecha ? p.fecha.toDate().toLocaleDateString('es-MX') : '';
         const items = (p.detalles || []).map(i =>
             `<tr><td>${i.nombre}</td><td class="text-center">${i.unidad}</td><td class="text-center">${i.cantidad}</td></tr>`
@@ -603,10 +614,10 @@ async function showAprobar() {
                         </table>
                     </div>
                     <div class="card-footer bg-white d-flex gap-2">
-                        <button class="btn btn-success btn-sm flex-fill" onclick="aprobarPedido('${d.id}','aprobado_lider')">
+                        <button class="btn btn-success btn-sm flex-fill" onclick="aprobarPedido('${p.id}','aprobado_lider')">
                             <i class="bi bi-check-lg me-1"></i>Aprobar
                         </button>
-                        <button class="btn btn-danger btn-sm flex-fill" onclick="aprobarPedido('${d.id}','rechazado')">
+                        <button class="btn btn-danger btn-sm flex-fill" onclick="aprobarPedido('${p.id}','rechazado')">
                             <i class="bi bi-x-lg me-1"></i>Rechazar
                         </button>
                     </div>
@@ -663,12 +674,16 @@ async function showAdminPedidos(filtro) {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    let query = db.collection('pedidos').orderBy('fecha', 'desc');
+    let query = db.collection('pedidos');
     if (filtro !== 'todos') {
         query = query.where('estado', '==', filtro);
     }
 
     const snap = await query.get();
+    // Sort by date descending in JS
+    const adminPedidos = [];
+    snap.forEach(d => adminPedidos.push({ id: d.id, ...d.data() }));
+    adminPedidos.sort((a, b) => (b.fecha?.toMillis() || 0) - (a.fecha?.toMillis() || 0));
 
     const filters = [
         { key: 'aprobado_lider', label: 'Por Aprobar', icon: 'bi-hourglass-split' },
@@ -686,7 +701,7 @@ async function showAdminPedidos(filtro) {
         </button>`
     ).join('');
 
-    if (snap.empty) {
+    if (adminPedidos.length === 0) {
         main.innerHTML = `
             <h5 class="mb-3"><i class="bi bi-clipboard-data me-2 text-proesa"></i>Gestion de Pedidos</h5>
             <div class="filter-tabs d-flex flex-wrap gap-2 mb-3">${filterBtns}</div>
@@ -695,8 +710,7 @@ async function showAdminPedidos(filtro) {
     }
 
     let rows = '';
-    snap.forEach(d => {
-        const p = d.data();
+    adminPedidos.forEach(p => {
         const fecha = p.fecha ? p.fecha.toDate().toLocaleDateString('es-MX') : '';
         const totalItems = (p.detalles || []).reduce((s, i) => s + i.cantidad, 0);
         const itemsList = (p.detalles || []).map(i => `${i.nombre} (${i.cantidad})`).join(', ');
@@ -704,22 +718,22 @@ async function showAdminPedidos(filtro) {
         let actions = '';
         if (p.estado === 'aprobado_lider') {
             actions = `
-                <button class="btn btn-success btn-sm me-1" onclick="aprobarPedido('${d.id}','aprobado')" title="Aprobar">
+                <button class="btn btn-success btn-sm me-1" onclick="aprobarPedido('${p.id}','aprobado')" title="Aprobar">
                     <i class="bi bi-check-lg"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="aprobarPedido('${d.id}','rechazado')" title="Rechazar">
+                <button class="btn btn-danger btn-sm" onclick="aprobarPedido('${p.id}','rechazado')" title="Rechazar">
                     <i class="bi bi-x-lg"></i>
                 </button>`;
         } else if (p.estado === 'aprobado') {
             actions = `
-                <button class="btn btn-primary btn-sm" onclick="aprobarPedido('${d.id}','entregado')" title="Marcar Entregado">
+                <button class="btn btn-primary btn-sm" onclick="aprobarPedido('${p.id}','entregado')" title="Marcar Entregado">
                     <i class="bi bi-truck"></i>
                 </button>`;
         }
 
         rows += `
             <tr>
-                <td><strong>#${d.id.slice(-5).toUpperCase()}</strong></td>
+                <td><strong>#${p.id.slice(-5).toUpperCase()}</strong></td>
                 <td>${p.nombreEmpleado}</td>
                 <td>${p.area}</td>
                 <td><small>${itemsList}</small></td>
@@ -758,10 +772,14 @@ async function showExportar() {
 
     const snap = await db.collection('pedidos')
         .where('estado', '==', 'aprobado')
-        .orderBy('fecha', 'desc')
         .get();
 
-    if (snap.empty) {
+    // Sort by date descending in JS
+    const exportPedidos = [];
+    snap.forEach(d => exportPedidos.push({ id: d.id, ...d.data() }));
+    exportPedidos.sort((a, b) => (b.fecha?.toMillis() || 0) - (a.fecha?.toMillis() || 0));
+
+    if (exportPedidos.length === 0) {
         main.innerHTML = `<div class="empty-state">
             <i class="bi bi-file-earmark-excel"></i>
             <h5>Sin pedidos aprobados</h5>
@@ -770,18 +788,17 @@ async function showExportar() {
     }
 
     let rows = '';
-    snap.forEach(d => {
-        const p = d.data();
+    exportPedidos.forEach(p => {
         const fecha = p.fecha ? p.fecha.toDate().toLocaleDateString('es-MX') : '';
         const items = (p.detalles || []).map(i => `${i.nombre} (${i.cantidad})`).join(', ');
 
         rows += `
             <tr>
                 <td class="text-center">
-                    <input type="checkbox" class="form-check-input export-check" value="${d.id}"
+                    <input type="checkbox" class="form-check-input export-check" value="${p.id}"
                            data-detalles='${JSON.stringify(p.detalles || [])}'>
                 </td>
-                <td><strong>#${d.id.slice(-5).toUpperCase()}</strong></td>
+                <td><strong>#${p.id.slice(-5).toUpperCase()}</strong></td>
                 <td>${p.nombreEmpleado}</td>
                 <td>${p.area}</td>
                 <td><small>${items}</small></td>
@@ -899,7 +916,7 @@ async function showCatalogo() {
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    const snap = await db.collection('productos').orderBy('categoria').get();
+    const snap = await db.collection('productos').get();
     const productos = {};
     snap.forEach(d => {
         const p = { id: d.id, ...d.data() };
