@@ -680,6 +680,17 @@ async function aprobarPedido(pedidoId, nuevoEstado) {
     }
 }
 
+async function eliminarPedido(pedidoId) {
+    if (!confirm('Eliminar este pedido? Esta accion no se puede deshacer.')) return;
+    try {
+        await db.collection('pedidos').doc(pedidoId).delete();
+        showAlert('Pedido eliminado', 'warning');
+        showAdminPedidos();
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'danger');
+    }
+}
+
 // ═══════════════════════════════
 //  VIEW: Admin Pedidos
 // ═══════════════════════════════
@@ -749,15 +760,20 @@ async function showAdminPedidos(filtro) {
                 <button class="btn btn-success btn-sm me-1" onclick="aprobarPedido('${p.id}','aprobado')" title="Aprobar">
                     <i class="bi bi-check-lg"></i>
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="aprobarPedido('${p.id}','rechazado')" title="Rechazar">
+                <button class="btn btn-danger btn-sm me-1" onclick="aprobarPedido('${p.id}','rechazado')" title="Rechazar">
                     <i class="bi bi-x-lg"></i>
                 </button>`;
         } else if (p.estado === 'aprobado') {
             actions = `
-                <button class="btn btn-primary btn-sm" onclick="aprobarPedido('${p.id}','entregado')" title="Marcar Entregado">
+                <button class="btn btn-primary btn-sm me-1" onclick="aprobarPedido('${p.id}','entregado')" title="Marcar Entregado">
                     <i class="bi bi-truck"></i>
                 </button>`;
         }
+        // Admin can always delete any order
+        actions += `
+            <button class="btn btn-outline-danger btn-sm" onclick="eliminarPedido('${p.id}')" title="Eliminar">
+                <i class="bi bi-trash"></i>
+            </button>`;
 
         rows += `
             <tr>
