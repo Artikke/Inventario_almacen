@@ -5,12 +5,12 @@
 // ─── Firebase Config ───
 // PEGA AQUI tu configuracion de Firebase (console.firebase.google.com)
 const firebaseConfig = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+    apiKey: "AIzaSyA2TBZwWuebLhxb32BYcxr4DGb1A-iDC84",
+    authDomain: "sistema-de-inventario-proesa.firebaseapp.com",
+    projectId: "sistema-de-inventario-proesa",
+    storageBucket: "sistema-de-inventario-proesa.firebasestorage.app",
+    messagingSenderId: "788858693454",
+    appId: "1:788858693454:web:e506cb5184a44f4ce6201f"
 };
 
 firebase.initializeApp(firebaseConfig);
