@@ -1,0 +1,289 @@
+/* ═══════════════════════════════════════════
+   PROESA – Sistema de Inventario
+   Corporate Design System
+   ═══════════════════════════════════════════ */
+
+:root {
+    --proesa-blue: #1a5276;
+    --proesa-dark: #0e3650;
+    --proesa-light: #d4e6f1;
+    --proesa-accent: #2980b9;
+    --proesa-bg: #f0f4f8;
+    --proesa-success: #27ae60;
+    --proesa-warning: #f39c12;
+    --proesa-danger: #e74c3c;
+}
+
+/* ─── Base ─── */
+body {
+    background: var(--proesa-bg);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ─── Navbar ─── */
+.navbar-proesa {
+    background: linear-gradient(135deg, var(--proesa-dark), var(--proesa-blue));
+    box-shadow: 0 2px 10px rgba(0,0,0,.15);
+    padding: .5rem 1rem;
+}
+.navbar-proesa .navbar-brand {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 1.3rem;
+    letter-spacing: 1px;
+}
+.navbar-proesa .nav-link {
+    color: rgba(255,255,255,.85) !important;
+    font-weight: 500;
+    padding: .5rem .8rem;
+    border-radius: .375rem;
+    transition: all .2s;
+}
+.navbar-proesa .nav-link:hover,
+.navbar-proesa .nav-link.active {
+    color: #fff !important;
+    background: rgba(255,255,255,.15);
+}
+.navbar-proesa .navbar-toggler {
+    border-color: rgba(255,255,255,.3);
+    color: #fff;
+}
+.navbar-proesa .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+/* ─── Buttons ─── */
+.btn-proesa {
+    background: linear-gradient(135deg, var(--proesa-blue), var(--proesa-accent));
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    padding: .6rem 1.5rem;
+    border-radius: .375rem;
+    transition: all .2s;
+}
+.btn-proesa:hover {
+    background: linear-gradient(135deg, var(--proesa-dark), var(--proesa-blue));
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(26,82,118,.3);
+}
+.btn-proesa:active { transform: translateY(0); }
+
+.btn-outline-proesa {
+    color: var(--proesa-blue);
+    border: 2px solid var(--proesa-blue);
+    background: transparent;
+    font-weight: 600;
+}
+.btn-outline-proesa:hover {
+    background: var(--proesa-blue);
+    color: #fff;
+}
+
+/* ─── Cards ─── */
+.card-proesa {
+    border: none;
+    border-radius: .75rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    transition: transform .2s, box-shadow .2s;
+}
+.card-proesa:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,.12);
+}
+.card-header-proesa {
+    background: linear-gradient(135deg, var(--proesa-blue), var(--proesa-accent));
+    color: #fff;
+    font-weight: 600;
+    border-radius: .75rem .75rem 0 0 !important;
+    padding: .75rem 1.25rem;
+}
+
+/* ─── Tables ─── */
+.table-proesa thead th {
+    background: var(--proesa-blue);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    white-space: nowrap;
+    padding: .6rem .75rem;
+}
+.table-proesa tbody tr:hover {
+    background: var(--proesa-light);
+}
+
+/* ─── Login Page ─── */
+.login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--proesa-dark) 0%, var(--proesa-blue) 50%, var(--proesa-accent) 100%);
+    padding: 1rem;
+}
+.login-container { width: 100%; max-width: 420px; }
+.login-card {
+    background: #fff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.login-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+.login-header h1 {
+    color: var(--proesa-blue);
+    font-weight: 800;
+    font-size: 2.2rem;
+    letter-spacing: 3px;
+    margin-bottom: 0;
+}
+.login-header p {
+    color: var(--proesa-accent);
+    font-size: .85rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    margin: 0;
+}
+.login-footer {
+    text-align: center;
+    color: rgba(255,255,255,.6);
+    font-size: .8rem;
+    margin-top: 1.5rem;
+}
+
+/* ─── Badges ─── */
+.badge-pendiente   { background: var(--proesa-warning); color: #fff; }
+.badge-aprobado    { background: var(--proesa-success); color: #fff; }
+.badge-rechazado   { background: var(--proesa-danger);  color: #fff; }
+.badge-entregado   { background: var(--proesa-blue);    color: #fff; }
+.badge-aprobado-lider { background: #8e44ad; color: #fff; }
+
+/* ─── Accordion (Catalog) ─── */
+.accordion-proesa .accordion-button {
+    font-weight: 600;
+    color: var(--proesa-dark);
+    background: var(--proesa-light);
+}
+.accordion-proesa .accordion-button:not(.collapsed) {
+    background: var(--proesa-blue);
+    color: #fff;
+}
+.accordion-proesa .accordion-button:focus {
+    box-shadow: 0 0 0 .2rem rgba(26,82,118,.25);
+}
+
+/* ─── Order Summary ─── */
+.order-summary {
+    position: sticky;
+    top: 80px;
+    background: #fff;
+    border-radius: .75rem;
+    padding: 1.25rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08);
+    border-left: 4px solid var(--proesa-blue);
+}
+.order-summary h6 {
+    color: var(--proesa-blue);
+    font-weight: 700;
+}
+.order-summary .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: .3rem 0;
+    font-size: .9rem;
+    border-bottom: 1px dashed #eee;
+}
+
+/* ─── Search ─── */
+.search-box {
+    position: relative;
+}
+.search-box .bi-search {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+}
+.search-box input {
+    padding-left: 2.2rem;
+}
+
+/* ─── Footer ─── */
+.footer-proesa {
+    background: var(--proesa-dark);
+    color: rgba(255,255,255,.7);
+    padding: .75rem 0;
+    font-size: .85rem;
+    margin-top: auto;
+}
+
+/* ─── Alerts ─── */
+.alert-proesa {
+    border-left: 4px solid var(--proesa-blue);
+    background: var(--proesa-light);
+    color: var(--proesa-dark);
+}
+
+/* ─── Status Filter Tabs ─── */
+.filter-tabs .btn {
+    border-radius: 2rem;
+    padding: .35rem 1rem;
+    font-size: .85rem;
+    font-weight: 500;
+}
+.filter-tabs .btn.active {
+    background: var(--proesa-blue);
+    color: #fff;
+}
+
+/* ─── Quantity input ─── */
+.qty-input {
+    width: 70px;
+    text-align: center;
+}
+
+/* ─── Loading spinner ─── */
+.spinner-proesa {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+}
+
+/* ─── Empty state ─── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #999;
+}
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+/* ─── User card ─── */
+.user-card {
+    border-left: 4px solid var(--proesa-blue);
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .login-card { padding: 1.5rem; }
+    .login-header h1 { font-size: 1.8rem; }
+    .order-summary { position: static; margin-top: 1rem; }
+    .table-proesa { font-size: .85rem; }
+    .qty-input { width: 60px; }
+    .navbar-proesa .navbar-brand { font-size: 1.1rem; }
+}
+@media (max-width: 576px) {
+    main.container-fluid { padding-left: .5rem; padding-right: .5rem; }
+    .card-proesa { border-radius: .5rem; }
+    .btn-proesa { padding: .5rem 1rem; }
+}
