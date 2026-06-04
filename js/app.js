@@ -267,10 +267,10 @@ function renderNav() {
     const role = currentUser.rol;
     let links = '';
 
-    if (role === 'empleado' || role === 'lider') {
-        links += navLink('showNuevoPedido', 'bi-cart-plus', 'Nuevo Pedido');
-        links += navLink('showMisPedidos', 'bi-list-check', 'Mis Pedidos');
-    }
+    // Todos pueden pedir material
+    links += navLink('showNuevoPedido', 'bi-cart-plus', 'Nuevo Pedido');
+    links += navLink('showMisPedidos', 'bi-list-check', 'Mis Pedidos');
+
     if (role === 'lider') {
         links += navLink('showAprobar', 'bi-check2-square', 'Aprobar');
     }
