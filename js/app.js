@@ -277,6 +277,7 @@ function renderNav() {
     if (role === 'admin') {
         links += navLink('showAdminPedidos', 'bi-clipboard-data', 'Pedidos');
         links += navLink('showExportar', 'bi-file-earmark-excel', 'Exportar');
+        links += navLink('showHistorial', 'bi-bar-chart-line', 'Historial');
         links += navLink('showCatalogo', 'bi-box-seam', 'Catalogo');
         links += navLink('showUsuarios', 'bi-people', 'Usuarios');
     }
@@ -988,6 +989,196 @@ async function descargarExcel() {
             fechaEntrega: firebase.firestore.FieldValue.serverTimestamp()
         });
     });
+}
+
+// ═══════════════════════════════
+//  VIEW: Historial por Area
+// ═══════════════════════════════
+
+async function showHistorial() {
+    setActiveNav('showHistorial');
+    const main = document.getElementById('mainContent');
+    main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
+
+    let snap;
+    try {
+        snap = await db.collection('pedidos').get();
+    } catch (e) {
+        main.innerHTML = `<div class="alert alert-danger">Error al cargar historial: ${e.message}</div>`;
+        return;
+    }
+
+    const pedidos = [];
+    snap.forEach(d => pedidos.push({ id: d.id, ...d.data() }));
+
+    // ── Stats by area ──
+    const porArea = {};
+    AREAS.forEach(a => {
+        porArea[a] = { total: 0, aprobados: 0, rechazados: 0, pendientes: 0, entregados: 0, articulos: 0, productos: {} };
+    });
+
+    pedidos.forEach(p => {
+        const area = p.area;
+        if (!porArea[area]) {
+            porArea[area] = { total: 0, aprobados: 0, rechazados: 0, pendientes: 0, entregados: 0, articulos: 0, productos: {} };
+        }
+        porArea[area].total++;
+        if (p.estado === 'aprobado' || p.estado === 'entregado') porArea[area].aprobados++;
+        if (p.estado === 'rechazado') porArea[area].rechazados++;
+        if (p.estado === 'pendiente' || p.estado === 'aprobado_lider') porArea[area].pendientes++;
+        if (p.estado === 'entregado') porArea[area].entregados++;
+
+        (p.detalles || []).forEach(item => {
+            porArea[area].articulos += item.cantidad;
+            if (!porArea[area].productos[item.nombre]) {
+                porArea[area].productos[item.nombre] = 0;
+            }
+            porArea[area].productos[item.nombre] += item.cantidad;
+        });
+    });
+
+    // ── Global stats ──
+    const totalPedidos = pedidos.length;
+    const totalArticulos = pedidos.reduce((s, p) => s + (p.detalles || []).reduce((ss, i) => ss + i.cantidad, 0), 0);
+    const totalEntregados = pedidos.filter(p => p.estado === 'entregado').length;
+    const totalPendientes = pedidos.filter(p => p.estado === 'pendiente' || p.estado === 'aprobado_lider').length;
+
+    // ── KPI cards ──
+    const kpis = `
+        <div class="row mb-4">
+            <div class="col-6 col-md-3 mb-2">
+                <div class="card card-proesa text-center p-3">
+                    <div class="fs-2 fw-bold text-proesa">${totalPedidos}</div>
+                    <small class="text-muted">Total Pedidos</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-2">
+                <div class="card card-proesa text-center p-3">
+                    <div class="fs-2 fw-bold" style="color:var(--proesa-success)">${totalEntregados}</div>
+                    <small class="text-muted">Entregados</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-2">
+                <div class="card card-proesa text-center p-3">
+                    <div class="fs-2 fw-bold" style="color:var(--proesa-warning)">${totalPendientes}</div>
+                    <small class="text-muted">Pendientes</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-2">
+                <div class="card card-proesa text-center p-3">
+                    <div class="fs-2 fw-bold text-proesa">${totalArticulos}</div>
+                    <small class="text-muted">Total Articulos</small>
+                </div>
+            </div>
+        </div>`;
+
+    // ── Area cards ──
+    let areaCards = '';
+    for (const [area, stats] of Object.entries(porArea)) {
+        if (stats.total === 0) continue;
+
+        // Top 5 products for this area
+        const topProds = Object.entries(stats.productos)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        const topList = topProds.map(([nombre, cant]) =>
+            `<div class="d-flex justify-content-between py-1 border-bottom" style="border-color:#eee!important">
+                <span class="small">${nombre}</span>
+                <span class="badge bg-secondary">${cant}</span>
+            </div>`
+        ).join('');
+
+        // Bar widths for visual
+        const maxPedidos = Math.max(...Object.values(porArea).map(s => s.total));
+        const barWidth = Math.round((stats.total / maxPedidos) * 100);
+
+        areaCards += `
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card card-proesa h-100">
+                    <div class="card-header card-header-proesa">
+                        <i class="bi bi-building me-2"></i>${area}
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">${stats.total} pedidos</span>
+                            <span class="small text-muted">${stats.articulos} articulos</span>
+                        </div>
+                        <div class="progress mb-3" style="height:8px">
+                            <div class="progress-bar" style="width:${barWidth}%;background:var(--proesa-blue)"></div>
+                        </div>
+                        <div class="d-flex gap-2 mb-3 flex-wrap">
+                            <span class="badge badge-aprobado"><i class="bi bi-check me-1"></i>${stats.aprobados}</span>
+                            <span class="badge badge-pendiente"><i class="bi bi-clock me-1"></i>${stats.pendientes}</span>
+                            <span class="badge badge-rechazado"><i class="bi bi-x me-1"></i>${stats.rechazados}</span>
+                            <span class="badge badge-entregado"><i class="bi bi-truck me-1"></i>${stats.entregados}</span>
+                        </div>
+                        <h6 class="small fw-bold text-muted mb-1">Mas solicitados:</h6>
+                        ${topList || '<span class="small text-muted">Sin productos</span>'}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    if (!areaCards) {
+        areaCards = `<div class="col-12">
+            <div class="empty-state">
+                <i class="bi bi-bar-chart-line"></i>
+                <h5>Sin historial</h5>
+                <p>Aun no hay pedidos registrados</p>
+            </div>
+        </div>`;
+    }
+
+    // ── Top products global ──
+    const globalProds = {};
+    pedidos.forEach(p => {
+        (p.detalles || []).forEach(item => {
+            if (!globalProds[item.nombre]) globalProds[item.nombre] = 0;
+            globalProds[item.nombre] += item.cantidad;
+        });
+    });
+    const topGlobal = Object.entries(globalProds)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    let topGlobalRows = '';
+    if (topGlobal.length > 0) {
+        const maxCant = topGlobal[0][1];
+        topGlobalRows = topGlobal.map(([nombre, cant], i) => {
+            const pct = Math.round((cant / maxCant) * 100);
+            return `
+                <tr>
+                    <td class="text-center">${i + 1}</td>
+                    <td>${nombre}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="progress flex-fill" style="height:6px">
+                                <div class="progress-bar" style="width:${pct}%;background:var(--proesa-blue)"></div>
+                            </div>
+                            <strong>${cant}</strong>
+                        </div>
+                    </td>
+                </tr>`;
+        }).join('');
+    }
+
+    main.innerHTML = `
+        <h5 class="mb-3"><i class="bi bi-bar-chart-line me-2 text-proesa"></i>Historial por Area</h5>
+        ${kpis}
+        <div class="row">${areaCards}</div>
+        ${topGlobal.length > 0 ? `
+        <div class="card card-proesa mt-3">
+            <div class="card-header card-header-proesa">
+                <i class="bi bi-trophy me-2"></i>Top 10 Productos Mas Solicitados
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th class="text-center" style="width:50px">#</th><th>Producto</th><th style="width:40%">Cantidad</th></tr></thead>
+                    <tbody>${topGlobalRows}</tbody>
+                </table>
+            </div>
+        </div>` : ''}`;
 }
 
 // ═══════════════════════════════
