@@ -685,19 +685,25 @@ async function aprobarPedido(pedidoId, nuevoEstado) {
 // ═══════════════════════════════
 
 async function showAdminPedidos(filtro) {
-    filtro = filtro || 'aprobado_lider';
+    filtro = filtro || 'por_aprobar';
     setActiveNav('showAdminPedidos');
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
 
-    let query = db.collection('pedidos');
-    if (filtro !== 'todos') {
-        query = query.where('estado', '==', filtro);
-    }
-
     let snap;
     try {
-        snap = await query.get();
+        if (filtro === 'por_aprobar') {
+            // Admin sees both pendiente and aprobado_lider
+            snap = await db.collection('pedidos')
+                .where('estado', 'in', ['pendiente', 'aprobado_lider'])
+                .get();
+        } else if (filtro === 'todos') {
+            snap = await db.collection('pedidos').get();
+        } else {
+            snap = await db.collection('pedidos')
+                .where('estado', '==', filtro)
+                .get();
+        }
     } catch (e) {
         main.innerHTML = `<div class="alert alert-danger">Error al cargar pedidos: ${e.message}</div>`;
         console.error('showAdminPedidos error:', e);
@@ -709,10 +715,9 @@ async function showAdminPedidos(filtro) {
     adminPedidos.sort((a, b) => (b.fecha?.toMillis() || 0) - (a.fecha?.toMillis() || 0));
 
     const filters = [
-        { key: 'aprobado_lider', label: 'Por Aprobar', icon: 'bi-hourglass-split' },
+        { key: 'por_aprobar', label: 'Por Aprobar', icon: 'bi-hourglass-split' },
         { key: 'aprobado', label: 'Aprobados', icon: 'bi-check-circle' },
         { key: 'entregado', label: 'Entregados', icon: 'bi-truck' },
-        { key: 'pendiente', label: 'Pendientes', icon: 'bi-clock' },
         { key: 'rechazado', label: 'Rechazados', icon: 'bi-x-circle' },
         { key: 'todos', label: 'Todos', icon: 'bi-grid' }
     ];
@@ -739,7 +744,7 @@ async function showAdminPedidos(filtro) {
         const itemsList = (p.detalles || []).map(i => `${i.nombre} (${i.cantidad})`).join(', ');
 
         let actions = '';
-        if (p.estado === 'aprobado_lider') {
+        if (p.estado === 'pendiente' || p.estado === 'aprobado_lider') {
             actions = `
                 <button class="btn btn-success btn-sm me-1" onclick="aprobarPedido('${p.id}','aprobado')" title="Aprobar">
                     <i class="bi bi-check-lg"></i>
