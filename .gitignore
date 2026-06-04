@@ -3,4 +3,4 @@ __pycache__/
 *.db
 .env
 backups/
-.streamlit/secrets.toml
+.streamlit/

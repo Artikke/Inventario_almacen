@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-title">
+    <h4><i class="bi bi-grid"></i> Catalogo de Productos</h4>
+</div>
+
+<!-- Add product -->
+<div class="card mb-3">
+    <div class="card-header bg-proesa text-white">
+        <i class="bi bi-plus-circle"></i> Agregar Producto
+    </div>
+    <div class="card-body">
+        <form method="post" action="/admin/catalogo/agregar" class="row g-2 align-items-end">
+            <div class="col-12 col-md-4">
+                <label class="form-label">Nombre</label>
+                <input type="text" name="nombre" class="form-control" placeholder="Nombre del producto" required>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label">Categoria</label>
+                <input type="text" name="categoria" class="form-control" value="General" list="catList">
+                <datalist id="catList">
+                    {% for cat in productos_por_cat.keys() %}
+                    <option value="{{ cat }}">
+                    {% endfor %}
+                </datalist>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label">Unidad</label>
+                <select name="unidad" class="form-select">
+                    <option>PIEZA</option>
+                    <option>PAQUETE</option>
+                    <option>CAJA</option>
+                    <option>ROLLO</option>
+                    <option>BOTE</option>
+                    <option>BOLSA</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-proesa w-100">Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Product list -->
+{% if not productos_por_cat %}
+<div class="empty-state">
+    <i class="bi bi-box-seam"></i>
+    <p>No hay productos en el catalogo.</p>
+</div>
+{% else %}
+<div class="accordion" id="catAccordion">
+    {% for cat, productos in productos_por_cat.items() %}
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#adm-cat-{{ loop.index }}">
+                {{ cat }}
+                <span class="badge bg-secondary ms-2">{{ productos|length }}</span>
+            </button>
+        </h2>
+        <div id="adm-cat-{{ loop.index }}" class="accordion-collapse collapse">
+            <div class="accordion-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-center">Unidad</th>
+                            <th class="text-center">Estado</th>
+                            <th style="width:60px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in productos %}
+                        <tr class="{{ 'table-secondary' if not p.activo }}">
+                            <td>{{ p.nombre }}</td>
+                            <td class="text-center">{{ p.unidad }}</td>
+                            <td class="text-center">
+                                {% if p.activo %}
+                                <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if p.activo %}
+                                <form method="post" action="/admin/catalogo/eliminar/{{ p.id }}"
+                                      onsubmit="return confirm('Desactivar {{ p.nombre }}?')">
+                                    <button class="btn btn-outline-danger btn-sm" title="Desactivar">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
