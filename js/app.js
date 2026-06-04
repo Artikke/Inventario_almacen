@@ -479,18 +479,18 @@ async function submitPedido() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
 
     try {
-        // Admin orders skip leader approval step
-        const esAdmin = currentUser.rol === 'admin';
+        // Admin and lider orders skip leader approval step — go straight to admin
+        const saltaLider = currentUser.rol === 'admin' || currentUser.rol === 'lider';
         await db.collection('pedidos').add({
             uid: currentUid,
             nombreEmpleado: currentUser.nombre,
             area: currentUser.area,
             detalles: detalles,
-            estado: esAdmin ? 'aprobado_lider' : 'pendiente',
+            estado: saltaLider ? 'aprobado_lider' : 'pendiente',
             fecha: firebase.firestore.FieldValue.serverTimestamp(),
-            aprobadoPorLider: esAdmin ? currentUid : null,
+            aprobadoPorLider: saltaLider ? currentUid : null,
             aprobadoPorAdmin: null,
-            nombreLider: esAdmin ? currentUser.nombre : null,
+            nombreLider: saltaLider ? currentUser.nombre : null,
             nombreAdmin: null,
             noInventario: null
         });
