@@ -666,8 +666,6 @@ async function aprobarPedido(pedidoId, nuevoEstado) {
                 updates.aprobadoPorAdmin = currentUid;
                 updates.nombreAdmin = currentUser.nombre;
             }
-        } else if (nuevoEstado === 'entregado') {
-            updates.fechaEntrega = firebase.firestore.FieldValue.serverTimestamp();
         }
 
         await db.collection('pedidos').doc(pedidoId).update(updates);
@@ -729,7 +727,6 @@ async function showAdminPedidos(filtro) {
     const filters = [
         { key: 'por_aprobar', label: 'Por Aprobar', icon: 'bi-hourglass-split' },
         { key: 'aprobado', label: 'Aprobados', icon: 'bi-check-circle' },
-        { key: 'entregado', label: 'Entregados', icon: 'bi-truck' },
         { key: 'rechazado', label: 'Rechazados', icon: 'bi-x-circle' },
         { key: 'todos', label: 'Todos', icon: 'bi-grid' }
     ];
@@ -763,11 +760,6 @@ async function showAdminPedidos(filtro) {
                 </button>
                 <button class="btn btn-danger btn-sm me-1" onclick="aprobarPedido('${p.id}','rechazado')" title="Rechazar">
                     <i class="bi bi-x-lg"></i>
-                </button>`;
-        } else if (p.estado === 'aprobado') {
-            actions = `
-                <button class="btn btn-primary btn-sm me-1" onclick="aprobarPedido('${p.id}','entregado')" title="Marcar Entregado">
-                    <i class="bi bi-truck"></i>
                 </button>`;
         }
         // Admin can always delete any order
@@ -981,12 +973,11 @@ async function descargarExcel() {
 
     showAlert(`Excel descargado con ${Object.keys(consolidated).length} productos`, 'success');
 
-    // Mark as exported (entregado)
+    // Save inventory number on exported orders
     checked.forEach(async cb => {
         await db.collection('pedidos').doc(cb.value).update({
-            estado: 'entregado',
             noInventario: noInv,
-            fechaEntrega: firebase.firestore.FieldValue.serverTimestamp()
+            fechaExportacion: firebase.firestore.FieldValue.serverTimestamp()
         });
     });
 }
@@ -1014,19 +1005,18 @@ async function showHistorial() {
     // ── Stats by area ──
     const porArea = {};
     AREAS.forEach(a => {
-        porArea[a] = { total: 0, aprobados: 0, rechazados: 0, pendientes: 0, entregados: 0, articulos: 0, productos: {} };
+        porArea[a] = { total: 0, aprobados: 0, rechazados: 0, pendientes: 0, articulos: 0, productos: {} };
     });
 
     pedidos.forEach(p => {
         const area = p.area;
         if (!porArea[area]) {
-            porArea[area] = { total: 0, aprobados: 0, rechazados: 0, pendientes: 0, entregados: 0, articulos: 0, productos: {} };
+            porArea[area] = { total: 0, aprobados: 0, rechazados: 0, pendientes: 0, articulos: 0, productos: {} };
         }
         porArea[area].total++;
-        if (p.estado === 'aprobado' || p.estado === 'entregado') porArea[area].aprobados++;
+        if (p.estado === 'aprobado') porArea[area].aprobados++;
         if (p.estado === 'rechazado') porArea[area].rechazados++;
         if (p.estado === 'pendiente' || p.estado === 'aprobado_lider') porArea[area].pendientes++;
-        if (p.estado === 'entregado') porArea[area].entregados++;
 
         (p.detalles || []).forEach(item => {
             porArea[area].articulos += item.cantidad;
@@ -1040,8 +1030,9 @@ async function showHistorial() {
     // ── Global stats ──
     const totalPedidos = pedidos.length;
     const totalArticulos = pedidos.reduce((s, p) => s + (p.detalles || []).reduce((ss, i) => ss + i.cantidad, 0), 0);
-    const totalEntregados = pedidos.filter(p => p.estado === 'entregado').length;
+    const totalAprobados = pedidos.filter(p => p.estado === 'aprobado').length;
     const totalPendientes = pedidos.filter(p => p.estado === 'pendiente' || p.estado === 'aprobado_lider').length;
+    const totalRechazados = pedidos.filter(p => p.estado === 'rechazado').length;
 
     // ── KPI cards ──
     const kpis = `
@@ -1054,8 +1045,8 @@ async function showHistorial() {
             </div>
             <div class="col-6 col-md-3 mb-2">
                 <div class="card card-proesa text-center p-3">
-                    <div class="fs-2 fw-bold" style="color:var(--proesa-success)">${totalEntregados}</div>
-                    <small class="text-muted">Entregados</small>
+                    <div class="fs-2 fw-bold" style="color:var(--proesa-success)">${totalAprobados}</div>
+                    <small class="text-muted">Aprobados</small>
                 </div>
             </div>
             <div class="col-6 col-md-3 mb-2">
@@ -1111,7 +1102,6 @@ async function showHistorial() {
                             <span class="badge badge-aprobado"><i class="bi bi-check me-1"></i>${stats.aprobados}</span>
                             <span class="badge badge-pendiente"><i class="bi bi-clock me-1"></i>${stats.pendientes}</span>
                             <span class="badge badge-rechazado"><i class="bi bi-x me-1"></i>${stats.rechazados}</span>
-                            <span class="badge badge-entregado"><i class="bi bi-truck me-1"></i>${stats.entregados}</span>
                         </div>
                         <h6 class="small fw-bold text-muted mb-1">Mas solicitados:</h6>
                         ${topList || '<span class="small text-muted">Sin productos</span>'}
@@ -1192,14 +1182,20 @@ async function showCatalogo() {
 
     const snap = await db.collection('productos').get();
     const productos = {};
+    const categorias = new Set();
     snap.forEach(d => {
         const p = { id: d.id, ...d.data() };
+        categorias.add(p.categoria);
         if (!productos[p.categoria]) productos[p.categoria] = [];
         productos[p.categoria].push(p);
     });
 
+    // Sort categories
+    const sortedCats = [...categorias].sort();
+
     let tables = '';
-    for (const [cat, items] of Object.entries(productos)) {
+    for (const cat of sortedCats) {
+        const items = productos[cat] || [];
         const rows = items.map(p => `
             <tr class="${!p.activo ? 'table-secondary text-muted' : ''}">
                 <td>${p.nombre}</td>
@@ -1211,11 +1207,11 @@ async function showCatalogo() {
                 </td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-${p.activo ? 'warning' : 'success'}"
-                            onclick="toggleProducto('${p.id}', ${!p.activo})">
+                            onclick="toggleProducto('${p.id}', ${!p.activo})" title="${p.activo ? 'Desactivar' : 'Activar'}">
                         <i class="bi bi-${p.activo ? 'pause' : 'play'}"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger ms-1"
-                            onclick="deleteProducto('${p.id}', '${p.nombre}')">
+                            onclick="deleteProducto('${p.id}', '${p.nombre}')" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -1223,9 +1219,13 @@ async function showCatalogo() {
 
         tables += `
             <div class="card card-proesa mb-3">
-                <div class="card-header bg-white fw-bold">
-                    <i class="bi bi-tag me-2 text-proesa"></i>${cat}
-                    <span class="badge bg-secondary ms-1">${items.length}</span>
+                <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-tag me-2 text-proesa"></i>${cat}
+                        <span class="badge bg-secondary ms-1">${items.length}</span>
+                    </span>
+                    <button class="btn btn-outline-danger btn-sm" onclick="deleteCategoria('${cat}')" title="Eliminar categoria">
+                        <i class="bi bi-trash me-1"></i>Eliminar
+                    </button>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover mb-0">
@@ -1239,18 +1239,91 @@ async function showCatalogo() {
     main.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0"><i class="bi bi-box-seam me-2 text-proesa"></i>Catalogo de Productos</h5>
-            <button class="btn btn-proesa btn-sm" onclick="showAddProductForm()">
-                <i class="bi bi-plus-lg me-1"></i>Agregar Producto
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-proesa btn-sm" onclick="exportarCatalogo()">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Exportar
+                </button>
+                <button class="btn btn-success btn-sm" onclick="showAddCategoryForm()">
+                    <i class="bi bi-folder-plus me-1"></i>Categoria
+                </button>
+                <button class="btn btn-proesa btn-sm" onclick="showAddProductForm()">
+                    <i class="bi bi-plus-lg me-1"></i>Producto
+                </button>
+            </div>
         </div>
+        <div id="addCategoryForm" class="d-none"></div>
         <div id="addProductForm" class="d-none"></div>
         ${tables}`;
 }
 
+function showAddCategoryForm() {
+    const form = document.getElementById('addCategoryForm');
+    form.classList.remove('d-none');
+    form.innerHTML = `
+        <div class="card card-proesa mb-3">
+            <div class="card-body">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold">Nombre de la nueva categoria</label>
+                        <input type="text" id="newCatNombre" class="form-control form-control-sm" placeholder="Ej: Limpieza">
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-success btn-sm w-100" onclick="agregarCategoria()">
+                            <i class="bi bi-folder-plus me-1"></i>Crear Categoria
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+}
+
+async function agregarCategoria() {
+    const nombre = document.getElementById('newCatNombre').value.trim();
+    if (!nombre) { showAlert('Ingresa el nombre de la categoria', 'warning'); return; }
+
+    // Check if category already exists
+    const existing = await db.collection('productos').where('categoria', '==', nombre).limit(1).get();
+    if (!existing.empty) {
+        showAlert('Esa categoria ya existe', 'warning');
+        return;
+    }
+
+    // Create a placeholder product to establish the category
+    await db.collection('productos').add({
+        nombre: '(Nueva categoria - agrega productos)',
+        categoria: nombre,
+        unidad: 'Pieza',
+        activo: false
+    });
+    showAlert(`Categoria "${nombre}" creada. Agrega productos a esta categoria.`, 'success');
+    showCatalogo();
+}
+
+async function deleteCategoria(cat) {
+    if (!confirm(`Eliminar la categoria "${cat}" y TODOS sus productos?`)) return;
+
+    const snap = await db.collection('productos').where('categoria', '==', cat).get();
+    const batch = db.batch();
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+
+    showAlert(`Categoria "${cat}" eliminada con ${snap.size} productos`, 'warning');
+    showCatalogo();
+}
+
 function showAddProductForm() {
     const form = document.getElementById('addProductForm');
-    const cats = Object.keys(PRODUCTOS);
-    const options = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    // Get categories from the current page
+    const catElements = document.querySelectorAll('.card-header .bi-tag');
+    const cats = new Set();
+    catElements.forEach(el => {
+        const text = el.parentElement.textContent.trim().split('\n')[0].trim();
+        if (text) cats.add(text);
+    });
+
+    // Fallback to constants if no categories loaded
+    const catList = cats.size > 0 ? [...cats].sort() : Object.keys(PRODUCTOS).sort();
+    const options = catList.map(c => `<option value="${c}">${c}</option>`).join('');
 
     form.classList.remove('d-none');
     form.innerHTML = `
@@ -1305,6 +1378,58 @@ async function deleteProducto(id, nombre) {
     await db.collection('productos').doc(id).delete();
     showAlert(`${nombre} eliminado`, 'warning');
     showCatalogo();
+}
+
+async function exportarCatalogo() {
+    const snap = await db.collection('productos').where('activo', '==', true).get();
+    const productos = {};
+    snap.forEach(d => {
+        const p = d.data();
+        if (!productos[p.categoria]) productos[p.categoria] = [];
+        productos[p.categoria].push(p);
+    });
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Catalogo PROESA');
+
+    ws.columns = [
+        { header: 'Categoria', key: 'cat', width: 25 },
+        { header: 'Producto', key: 'prod', width: 35 },
+        { header: 'Unidad', key: 'um', width: 14 }
+    ];
+
+    const headerRow = ws.getRow(1);
+    headerRow.eachCell(cell => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A5276' } };
+        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+            top: { style: 'thin', color: { argb: 'FF0E3650' } },
+            bottom: { style: 'thin', color: { argb: 'FF0E3650' } },
+            left: { style: 'thin', color: { argb: 'FF0E3650' } },
+            right: { style: 'thin', color: { argb: 'FF0E3650' } }
+        };
+    });
+    headerRow.height = 22;
+
+    for (const [cat, items] of Object.entries(productos).sort()) {
+        items.forEach(p => {
+            const row = ws.addRow({ cat: cat, prod: p.nombre, um: p.unidad });
+            row.eachCell(cell => {
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFD4D4D4' } },
+                    bottom: { style: 'thin', color: { argb: 'FFD4D4D4' } },
+                    left: { style: 'thin', color: { argb: 'FFD4D4D4' } },
+                    right: { style: 'thin', color: { argb: 'FFD4D4D4' } }
+                };
+            });
+        });
+    }
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'PROESA_Catalogo.xlsx');
+    showAlert('Catalogo exportado', 'success');
 }
 
 // ═══════════════════════════════
@@ -1381,8 +1506,7 @@ async function showUsuarios() {
                         <div class="col-md-2">
                             <label class="form-label small fw-bold">Rol</label>
                             <select id="newUserRol" class="form-select form-select-sm">
-                                <option value="empleado">Empleado</option>
-                                <option value="lider">Lider</option>
+                                <option value="lider">Lider de Area</option>
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
@@ -1460,8 +1584,7 @@ function badgeEstado(estado) {
         pendiente:      { clase: 'badge-pendiente',      texto: 'Pendiente' },
         aprobado_lider: { clase: 'badge-aprobado-lider',  texto: 'Aprobado Lider' },
         aprobado:       { clase: 'badge-aprobado',        texto: 'Aprobado' },
-        rechazado:      { clase: 'badge-rechazado',       texto: 'Rechazado' },
-        entregado:      { clase: 'badge-entregado',       texto: 'Entregado' }
+        rechazado:      { clase: 'badge-rechazado',       texto: 'Rechazado' }
     };
     const b = map[estado] || { clase: 'bg-secondary', texto: estado };
     return `<span class="badge ${b.clase}">${b.texto}</span>`;
