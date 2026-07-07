@@ -1485,7 +1485,7 @@ async function showUsuarios() {
                             <small><i class="bi bi-building me-1"></i>${u.area}</small>
                         </div>
                     </div>
-                    ${u.rol !== 'admin' ? `
+                    ${d.id !== currentUid ? `
                     <div class="card-footer bg-white">
                         <button class="btn btn-outline-danger btn-sm" onclick="deleteUsuario('${d.id}', '${u.nombre}')">
                             <i class="bi bi-trash me-1"></i>Eliminar
