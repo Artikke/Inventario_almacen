@@ -1201,6 +1201,11 @@ async function showCatalogo() {
                 <td>${p.nombre}</td>
                 <td class="text-center">${p.unidad}</td>
                 <td class="text-center">
+                    <input type="number" class="form-control form-control-sm" style="width:90px;display:inline"
+                           value="${p.costo || 0}" step="0.01" min="0"
+                           onchange="updateCosto('${p.id}', this.value)">
+                </td>
+                <td class="text-center">
                     <span class="badge ${p.activo ? 'bg-success' : 'bg-secondary'}">
                         ${p.activo ? 'Activo' : 'Inactivo'}
                     </span>
@@ -1229,7 +1234,7 @@ async function showCatalogo() {
                 </div>
                 <div class="table-responsive">
                     <table class="table table-sm table-hover mb-0">
-                        <thead><tr><th>Producto</th><th class="text-center">Unidad</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
+                        <thead><tr><th>Producto</th><th class="text-center">Unidad</th><th class="text-center">Costo Unit.</th><th class="text-center">Estado</th><th class="text-center">Acciones</th></tr></thead>
                         <tbody>${rows}</tbody>
                     </table>
                 </div>
@@ -1341,10 +1346,14 @@ function showAddProductForm() {
                     <div class="col-md-2">
                         <label class="form-label small fw-bold">Unidad</label>
                         <select id="newProdUM" class="form-select form-select-sm">
-                            <option>Pieza</option><option>Caja</option><option>Paquete</option><option>Par</option>
+                            <option>Pieza</option><option>Caja</option><option>Paquete</option><option>Par</option><option>Bolsa</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-1">
+                        <label class="form-label small fw-bold">Costo</label>
+                        <input type="number" id="newProdCosto" class="form-control form-control-sm" placeholder="0.00" step="0.01" min="0">
+                    </div>
+                    <div class="col-md-2">
                         <button class="btn btn-success btn-sm w-100" onclick="agregarProducto()">
                             <i class="bi bi-plus-lg me-1"></i>Agregar
                         </button>
@@ -1359,13 +1368,20 @@ async function agregarProducto() {
     const cat    = document.getElementById('newProdCat').value;
     const um     = document.getElementById('newProdUM').value;
 
+    const costo = parseFloat(document.getElementById('newProdCosto')?.value) || 0;
+
     if (!nombre) { showAlert('Ingresa el nombre del producto', 'warning'); return; }
 
     await db.collection('productos').add({
-        nombre: nombre, categoria: cat, unidad: um, activo: true
+        nombre: nombre, categoria: cat, unidad: um, costo: costo, activo: true
     });
     showAlert(`${nombre} agregado al catalogo`, 'success');
     showCatalogo();
+}
+
+async function updateCosto(id, valor) {
+    const costo = parseFloat(valor) || 0;
+    await db.collection('productos').doc(id).update({ costo: costo });
 }
 
 async function toggleProducto(id, newState) {
@@ -1395,7 +1411,8 @@ async function exportarCatalogo() {
     ws.columns = [
         { header: 'Categoria', key: 'cat', width: 25 },
         { header: 'Producto', key: 'prod', width: 35 },
-        { header: 'Unidad', key: 'um', width: 14 }
+        { header: 'Unidad', key: 'um', width: 14 },
+        { header: 'Costo Unitario', key: 'costo', width: 16 }
     ];
 
     const headerRow = ws.getRow(1);
@@ -1414,7 +1431,7 @@ async function exportarCatalogo() {
 
     for (const [cat, items] of Object.entries(productos).sort()) {
         items.forEach(p => {
-            const row = ws.addRow({ cat: cat, prod: p.nombre, um: p.unidad });
+            const row = ws.addRow({ cat: cat, prod: p.nombre, um: p.unidad, costo: p.costo || 0 });
             row.eachCell(cell => {
                 cell.border = {
                     top: { style: 'thin', color: { argb: 'FFD4D4D4' } },
