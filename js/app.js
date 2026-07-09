@@ -1256,6 +1256,9 @@ async function showCatalogo() {
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="mb-0"><i class="bi bi-box-seam me-2 text-proesa"></i>Catalogo de Productos</h5>
             <div class="d-flex gap-2">
+                <button class="btn btn-warning btn-sm" onclick="migrarCostosExcel()">
+                    <i class="bi bi-arrow-repeat me-1"></i>Actualizar Costos Excel
+                </button>
                 <button class="btn btn-outline-proesa btn-sm" onclick="exportarCatalogo()">
                     <i class="bi bi-file-earmark-excel me-1"></i>Exportar
                 </button>
@@ -1393,6 +1396,34 @@ async function agregarProducto() {
 async function updateCosto(id, valor) {
     const costo = parseFloat(valor) || 0;
     await db.collection('productos').doc(id).update({ costo: costo });
+}
+
+async function migrarCostosExcel() {
+    const costosExcel = {
+        'Lapiz #2': 2.35,
+        'Marcatextos amarillo': 69.96,
+        'Grapas estandar': 18.31,
+        'Engrapadora': 59.66,
+        'Diurex': 7.98,
+        'Tijeras': 30.32,
+        'Sacapuntas': 1.52,
+        'Regla 30cm': 15.9,
+        'Pilas AA': 18.675,
+        'Pilas AAA': 18.675
+    };
+    const snap = await db.collection('productos').get();
+    let count = 0;
+    const batch = db.batch();
+    snap.forEach(d => {
+        const nombre = d.data().nombre;
+        if (costosExcel[nombre] !== undefined) {
+            batch.update(d.ref, { costo: costosExcel[nombre] });
+            count++;
+        }
+    });
+    await batch.commit();
+    showAlert(`${count} productos actualizados con costos del Excel`, 'success');
+    showCatalogo();
 }
 
 async function toggleProducto(id, newState) {
