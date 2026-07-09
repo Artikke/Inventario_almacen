@@ -57,35 +57,35 @@ const PRODUCTOS = {
         { nombre: 'Boligrafo azul', unidad: 'Pieza' },
         { nombre: 'Boligrafo negro', unidad: 'Pieza' },
         { nombre: 'Boligrafo rojo', unidad: 'Pieza' },
-        { nombre: 'Lapiz #2', unidad: 'Pieza' },
-        { nombre: 'Marcatextos amarillo', unidad: 'Pieza' },
+        { nombre: 'Lapiz #2', unidad: 'Pieza', costo: 2.35 },
+        { nombre: 'Marcatextos amarillo', unidad: 'Pieza', costo: 69.96 },
         { nombre: 'Marcador permanente negro', unidad: 'Pieza' },
         { nombre: 'Marcador pizarron', unidad: 'Pieza' }
     ],
     'Sujetadores': [
         { nombre: 'Clips estandar', unidad: 'Caja' },
         { nombre: 'Clips mariposa', unidad: 'Caja' },
-        { nombre: 'Grapas estandar', unidad: 'Caja' },
-        { nombre: 'Engrapadora', unidad: 'Pieza' },
+        { nombre: 'Grapas estandar', unidad: 'Caja', costo: 18.31 },
+        { nombre: 'Engrapadora', unidad: 'Pieza', costo: 59.66 },
         { nombre: 'Desengrapadora', unidad: 'Pieza' }
     ],
     'Adhesivos': [
         { nombre: 'Cinta adhesiva transparente', unidad: 'Pieza' },
         { nombre: 'Cinta canela', unidad: 'Pieza' },
         { nombre: 'Pegamento en barra', unidad: 'Pieza' },
-        { nombre: 'Diurex', unidad: 'Pieza' }
+        { nombre: 'Diurex', unidad: 'Pieza', costo: 7.98 }
     ],
     'Herramientas': [
-        { nombre: 'Tijeras', unidad: 'Pieza' },
+        { nombre: 'Tijeras', unidad: 'Pieza', costo: 30.32 },
         { nombre: 'Cutter', unidad: 'Pieza' },
-        { nombre: 'Regla 30cm', unidad: 'Pieza' },
+        { nombre: 'Regla 30cm', unidad: 'Pieza', costo: 15.9 },
         { nombre: 'Perforadora', unidad: 'Pieza' },
         { nombre: 'Goma de borrar', unidad: 'Pieza' },
-        { nombre: 'Sacapuntas', unidad: 'Pieza' }
+        { nombre: 'Sacapuntas', unidad: 'Pieza', costo: 1.52 }
     ],
     'Pilas': [
-        { nombre: 'Pilas AA', unidad: 'Par' },
-        { nombre: 'Pilas AAA', unidad: 'Par' }
+        { nombre: 'Pilas AA', unidad: 'Par', costo: 18.675 },
+        { nombre: 'Pilas AAA', unidad: 'Par', costo: 18.675 }
     ],
     'Proteccion': [
         { nombre: 'Cubrebocas', unidad: 'Caja' },
