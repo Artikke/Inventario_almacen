@@ -326,6 +326,7 @@ async function cargarDatosIniciales() {
                 nombre: item.nombre,
                 categoria: categoria,
                 unidad: item.unidad,
+                costo: item.costo || 0,
                 activo: true
             });
         }
@@ -1293,7 +1294,7 @@ async function showCatalogo() {
                         <i class="bi bi-${p.activo ? 'pause' : 'play'}"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-danger ms-1"
-                            onclick="deleteProducto('${p.id}', '${p.nombre}')" title="Eliminar">
+                            onclick="deleteProducto('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
