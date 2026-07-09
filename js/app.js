@@ -106,18 +106,17 @@ const PRODUCTOS = {
 
 auth.onAuthStateChanged(async user => {
     if (user) {
-        // Ignorar usuarios de LANS — no hacer signOut para no afectar la otra sesion
-        if (user.email && !user.email.endsWith('@proesa.app')) {
-            showLogin();
-            return;
-        }
         currentUid = user.uid;
-        const doc = await db.collection('usuarios').doc(user.uid).get();
-        if (doc.exists) {
-            currentUser = { id: doc.id, ...doc.data() };
-            showApp();
-        } else {
-            auth.signOut();
+        try {
+            const doc = await db.collection('usuarios').doc(user.uid).get();
+            if (doc.exists && doc.data().rol) {
+                currentUser = { id: doc.id, ...doc.data() };
+                showApp();
+            } else {
+                showLogin();
+            }
+        } catch (e) {
+            showLogin();
         }
     } else {
         currentUser = null;
@@ -143,8 +142,15 @@ async function login() {
     alert.classList.add('d-none');
 
     try {
-        const email = userInput.includes('@') ? userInput : `${userInput}@proesa.app`;
-        await auth.signInWithEmailAndPassword(email, pass);
+        if (userInput.includes('@')) {
+            await auth.signInWithEmailAndPassword(userInput, pass);
+        } else {
+            try {
+                await auth.signInWithEmailAndPassword(`${userInput}@proesa.app`, pass);
+            } catch {
+                await auth.signInWithEmailAndPassword(`${userInput}@lans.app`, pass);
+            }
+        }
     } catch (e) {
         alert.textContent = 'Usuario o contrasena incorrectos';
         alert.classList.remove('d-none');
