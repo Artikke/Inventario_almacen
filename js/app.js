@@ -1166,7 +1166,7 @@ async function showHistorial() {
     }
 
     const pedidos = [];
-    snap.forEach(d => pedidos.push({ id: d.id, ...d.data() }));
+    snap.forEach(d => { const data = { id: d.id, ...d.data() }; if (data.estado !== 'borrador') pedidos.push(data); });
 
     // ── Stats by area ──
     const porArea = {};
