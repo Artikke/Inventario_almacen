@@ -413,10 +413,23 @@ function showAlert(msg, type = 'info') {
 //  VIEW: Nuevo Pedido
 // ═══════════════════════════════
 
-async function showNuevoPedido() {
+let _editandoBorradorId = null;
+
+async function showNuevoPedido(borradorId) {
+    _editandoBorradorId = borradorId || null;
     setActiveNav('showNuevoPedido');
     const main = document.getElementById('mainContent');
     main.innerHTML = '<div class="spinner-proesa"><div class="spinner-border text-primary"></div></div>';
+
+    let borradorDetalles = {};
+    if (_editandoBorradorId) {
+        const bDoc = await db.collection('pedidos').doc(_editandoBorradorId).get();
+        if (bDoc.exists && bDoc.data().estado === 'borrador') {
+            (bDoc.data().detalles || []).forEach(d => { borradorDetalles[d.productoId] = d.cantidad; });
+        } else {
+            _editandoBorradorId = null;
+        }
+    }
 
     const snap = await db.collection('productos').where('activo', '==', true).get();
     const productos = {};
@@ -434,12 +447,13 @@ async function showNuevoPedido() {
     let accordionItems = '';
     let idx = 0;
     for (const [cat, items] of Object.entries(sortedProductos)) {
+        items.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
         const rows = items.map(p => `
             <tr>
                 <td>${p.nombre}</td>
                 <td class="text-center"><small class="text-muted">${p.unidad}</small></td>
                 <td class="text-center">
-                    <input type="number" min="0" value="0" class="form-control form-control-sm qty-input"
+                    <input type="number" min="0" value="${borradorDetalles[p.id] || 0}" class="form-control form-control-sm qty-input"
                            data-id="${p.id}" data-nombre="${p.nombre}" data-unidad="${p.unidad}"
                            onchange="updateSummary()" oninput="updateSummary()">
                 </td>
@@ -473,7 +487,7 @@ async function showNuevoPedido() {
             <div class="col-lg-8">
                 <div class="card card-proesa mb-3">
                     <div class="card-header card-header-proesa">
-                        <i class="bi bi-cart-plus me-2"></i>Nuevo Pedido de Material
+                        <i class="bi bi-${_editandoBorradorId ? 'pencil' : 'cart-plus'} me-2"></i>${_editandoBorradorId ? 'Editando Borrador' : 'Nuevo Pedido de Material'}
                     </div>
                     <div class="card-body">
                         <div class="search-box mb-3">
@@ -499,9 +513,14 @@ async function showNuevoPedido() {
                     <button class="btn btn-proesa w-100 mt-3" onclick="submitPedido()" id="btnSubmit">
                         <i class="bi bi-send me-2"></i>Enviar Pedido
                     </button>
+                    <button class="btn btn-outline-proesa w-100 mt-2" onclick="guardarBorrador()" id="btnBorrador">
+                        <i class="bi bi-save me-2"></i>Guardar Borrador
+                    </button>
                 </div>
             </div>
         </div>`;
+
+    if (_editandoBorradorId) updateSummary();
 }
 
 function filterProducts(query) {
@@ -558,9 +577,8 @@ async function submitPedido() {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
 
     try {
-        // Admin and lider orders skip leader approval step — go straight to admin
         const saltaLider = currentUser.rol === 'admin' || currentUser.rol === 'lider';
-        await db.collection('pedidos').add({
+        const pedidoData = {
             uid: currentUid,
             nombreEmpleado: currentUser.nombre,
             area: currentUser.area,
@@ -572,13 +590,80 @@ async function submitPedido() {
             nombreLider: saltaLider ? currentUser.nombre : null,
             nombreAdmin: null,
             noInventario: null
-        });
+        };
+
+        if (_editandoBorradorId) {
+            await db.collection('pedidos').doc(_editandoBorradorId).update(pedidoData);
+            _editandoBorradorId = null;
+        } else {
+            await db.collection('pedidos').add(pedidoData);
+        }
         showAlert('Pedido enviado correctamente', 'success');
         showMisPedidos();
     } catch (e) {
         showAlert('Error al enviar: ' + e.message, 'danger');
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-send me-2"></i>Enviar Pedido';
+    }
+}
+
+async function eliminarBorrador(id) {
+    if (!confirm('Eliminar este borrador?')) return;
+    try {
+        await db.collection('pedidos').doc(id).delete();
+        showAlert('Borrador eliminado', 'warning');
+        showMisPedidos();
+    } catch (e) {
+        showAlert('Error: ' + e.message, 'danger');
+    }
+}
+
+async function guardarBorrador() {
+    const detalles = [];
+    document.querySelectorAll('.qty-input').forEach(inp => {
+        const qty = parseInt(inp.value) || 0;
+        if (qty > 0) {
+            detalles.push({
+                productoId: inp.dataset.id,
+                nombre: inp.dataset.nombre,
+                unidad: inp.dataset.unidad,
+                cantidad: qty
+            });
+        }
+    });
+
+    if (detalles.length === 0) {
+        showAlert('Agrega al menos un producto para guardar', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btnBorrador');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Guardando...';
+
+    try {
+        const borradorData = {
+            uid: currentUid,
+            nombreEmpleado: currentUser.nombre,
+            area: currentUser.area,
+            detalles: detalles,
+            estado: 'borrador',
+            fecha: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (_editandoBorradorId) {
+            await db.collection('pedidos').doc(_editandoBorradorId).update(borradorData);
+        } else {
+            const doc = await db.collection('pedidos').add(borradorData);
+            _editandoBorradorId = doc.id;
+        }
+        showAlert('Borrador guardado. Puedes seguir agregando productos.', 'success');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Borrador';
+    } catch (e) {
+        showAlert('Error al guardar: ' + e.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-save me-2"></i>Guardar Borrador';
     }
 }
 
@@ -637,8 +722,12 @@ async function showMisPedidos() {
                     <div class="card-body p-0">
                         <ul class="list-group list-group-flush">${items}</ul>
                     </div>
-                    <div class="card-footer bg-white small text-muted">
-                        <i class="bi bi-calendar me-1"></i>${fecha}
+                    <div class="card-footer bg-white small text-muted d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-calendar me-1"></i>${fecha}</span>
+                        ${p.estado === 'borrador' ? `<div>
+                            <button class="btn btn-outline-primary btn-sm me-1" onclick="showNuevoPedido('${p.id}')" title="Editar borrador"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="eliminarBorrador('${p.id}')" title="Eliminar borrador"><i class="bi bi-trash"></i></button>
+                        </div>` : ''}
                     </div>
                 </div>
             </div>`;
@@ -797,9 +886,8 @@ async function showAdminPedidos(filtro) {
         console.error('showAdminPedidos error:', e);
         return;
     }
-    // Sort by date descending in JS
     const adminPedidos = [];
-    snap.forEach(d => adminPedidos.push({ id: d.id, ...d.data() }));
+    snap.forEach(d => { const data = { id: d.id, ...d.data() }; if (data.estado !== 'borrador') adminPedidos.push(data); });
     adminPedidos.sort((a, b) => (b.fecha?.toMillis() || 0) - (a.fecha?.toMillis() || 0));
 
     const filters = [
@@ -1273,7 +1361,7 @@ async function showCatalogo() {
 
     let tables = '';
     for (const cat of sortedCats) {
-        const items = productos[cat] || [];
+        const items = (productos[cat] || []).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
         const rows = items.map(p => `
             <tr class="${!p.activo ? 'table-secondary text-muted' : ''}">
                 <td>${p.nombre}</td>
@@ -1677,6 +1765,7 @@ async function deleteUsuario(uid, nombre) {
 
 function badgeEstado(estado) {
     const map = {
+        borrador:       { clase: 'bg-info',               texto: 'Borrador' },
         pendiente:      { clase: 'badge-pendiente',      texto: 'Pendiente' },
         aprobado_lider: { clase: 'badge-aprobado-lider',  texto: 'Aprobado Lider' },
         aprobado:       { clase: 'badge-aprobado',        texto: 'Aprobado' },
